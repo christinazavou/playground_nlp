@@ -13,7 +13,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from scipy.spatial.distance import cosine, euclidean
 from src.utils.io_utils import read_df
 from src.utils.text_utils import evaluate_value_or_dict
-from src.utils.utils import iter_tickets_on_field
+from src.utils.pandas_utils import iter_tickets_on_field
 
 
 class TaggedDocumentGenerator(object):
@@ -80,61 +80,38 @@ class CorpusToDoc2Vec(object):
         # model.delete_temporary_training_data(keep_doctags_vectors=True, keep_inference=True)
 
     def get_vectors_as_np(self):
-        return np.array(self.model.docvecs)
+        return np.array(self.model.docvecs.vectors_docs)
 
     def show_similar(self, label, top_n=10, **kwargs):
-        similar_ones = self.model.docvecs.most_similar(label, topn=top_n)
-        similar_labels = [int(sim.replace('SENT_', '')) for sim, p in similar_ones]
+        similar_documents = self.model.docvecs.most_similar(label, topn=top_n)
+        labels_of_similar_documents = [int(sim.replace('SENT_', '')) for sim, p in similar_documents]
 
         if 'indices' in kwargs and kwargs['indices']:
-            return similar_labels
+            return labels_of_similar_documents
         if 'model_field' in kwargs and kwargs['model_field']:
-            similar_tickets = {}
-            for i, (idx, tok) in enumerate(iter_tickets_on_field(self.field, self.filename)):
-                if idx in similar_labels:
-                    similar_tickets[unicode(idx)] = tok
-            return similar_tickets
+            return self._get_similar_tickets(self.field, labels_of_similar_documents)
         if 'field' in kwargs:
-            similar_tickets = {}
-            for i, (idx, tok) in enumerate(iter_tickets_on_field(kwargs['field'], self.filename)):
-                if idx in similar_labels:
-                    similar_tickets[unicode(idx)] = tok
-            return similar_tickets
+            return self._get_similar_tickets(kwargs['field'], labels_of_similar_documents)
 
-    def similarity(self, idx1=None, idx2=None, sent1=None, sent2=None, metric='cosine'):
-        if idx1 is not None and idx2 is not None:
-            if metric == 'cosine':
-                return 1.0 - cosine(self.model.docvecs[idx1], self.model.docvecs[idx2])
-            else:  # metric == 'euclidean':
-                return euclidean(self.model.docvecs[idx1], self.model.docvecs[idx2])
-        elif sent1 is not None and sent2 is not None:
-            if metric == 'cosine':
-                return cosine_similarity(self.model.infer_vector(sent1), self.model.infer_vector(sent2))
-            else:  # metric == 'euclidean'
-                return euclidean(self.model.infer_vector(sent1), self.model.infer_vector(sent2))
+    def _get_similar_tickets(self, field_to_read, indices_of_similar_documents):
+        similar_tickets = {}
+        for i, (idx, tok) in enumerate(iter_tickets_on_field(field_to_read, self.filename)):
+            if idx in indices_of_similar_documents:
+                similar_tickets[idx] = tok
+        return similar_tickets
+
+    def similarity_given_sentences(self, sent1, sent2, metric='cosine'):
+        if metric == 'cosine':
+            return cosine_similarity(self.model.infer_vector(sent1), self.model.infer_vector(sent2))
         else:
-            raise Exception('missing data to calculate similarity')
+            return euclidean(self.model.infer_vector(sent1), self.model.infer_vector(sent2))
+
+    def similarity_given_indices(self, idx1, idx2, metric='cosine'):
+        if metric == 'cosine':
+            return 1.0 - cosine(self.model.docvecs[idx1], self.model.docvecs[idx2])
+        else:
+            return euclidean(self.model.docvecs[idx1], self.model.docvecs[idx2])
 
     def predict(self, doc_words):
         return self.model.infer_vector(doc_words)
-
-    # docvec = model.model.docvecs['SENT_24327']
-    # similar_by_vector(vector, topn=10, restrict_vocab=None)
-    # similarity(d1, d2)
-    # similarity_unseen_docs(model, doc_words1, doc_words2, alpha=0.1, min_alpha=0.0001, steps=5)
-    # model_.show_similar(label='SENT_78785')
-    # print model_.similarity(idx1=5791, idx2=5867), model_.similarity(idx1=5791, idx2=5867, metric='euclidean')
-
-
-if __name__ == '__main__':
-
-    df_file_ = '../../data/LibertyGlobal/DBSCAN/config1/data_frame_selectedpreprocessed.p.zip'
-    field_text_ = 'textpreprocessed'
-    model_file_ = 'tmpdoc2vec.p.zip'  # ''..\..\models\LibertyGlobal\DBSCAN\config1\doc2vec.p.zip'
-    model_ = CorpusToDoc2Vec(
-        df_file_, field_text_, model_file_, vector_size=500, window=8, min_count=5, iter=20, workers=3
-    )
-
-    corpus_vectors = model_.get_vectors_as_np()
-
 

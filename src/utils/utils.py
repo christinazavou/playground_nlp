@@ -24,27 +24,6 @@ def to_remove_indices(df, condition_dict, logger=None):
     return df
 
 
-def iter_tickets_on_field(field, datafile=None, data=None, use_bi_grams=False, as_list=True):
-    """The field should contains lists (e.g. a preprocessed field)"""
-    if data is None:
-        if datafile:
-            data = read_df(datafile)
-        else:
-            raise Exception('nothing to iterate on was given')
-    for idx, row in data.iterrows():
-        text = eval_utf(row[field])
-        if not use_bi_grams:
-            if not as_list:
-                yield idx, u' '.join([item for sublist in text for item in sublist])
-            else:
-                yield idx, [item for sublist in text for item in sublist]
-        else:
-            if not as_list:
-                yield idx, u' '.join(bi_grams_on_sentences_list(text))
-            else:
-                yield idx, bi_grams_on_sentences_list(text)
-
-
 def iter_tickets_with_degree(field, degree_field, datafile=None, data=None, use_bi_grams=False):
     """The field should contains lists (e.g. a preprocessed field)"""
     if data is None:
