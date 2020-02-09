@@ -249,3 +249,76 @@
 2020-02-08 22:47:41,069 : MainThread : INFO : saved exampleModel.p
 2020-02-08 22:47:41,069 : MainThread : INFO : Finished doc2vec after 0.0 minutes.
 2020-02-08 22:47:41,070 : MainThread : INFO : doc2vec shape: ()
+2020-02-09 21:25:36,055 : MainThread : INFO : loading Doc2Vec object from exampleModel.p
+2020-02-09 21:25:36,060 : MainThread : INFO : loading wv recursively from exampleModel.p.wv.* with mmap=None
+2020-02-09 21:25:36,060 : MainThread : INFO : loading vocabulary recursively from exampleModel.p.vocabulary.* with mmap=None
+2020-02-09 21:25:36,060 : MainThread : INFO : loading trainables recursively from exampleModel.p.trainables.* with mmap=None
+2020-02-09 21:25:36,060 : MainThread : INFO : loading docvecs recursively from exampleModel.p.docvecs.* with mmap=None
+2020-02-09 21:25:36,060 : MainThread : INFO : loaded exampleModel.p
+2020-02-09 21:25:36,060 : MainThread : INFO : doc2vec shape: ()
+2020-02-09 21:26:24,020 : MainThread : INFO : loading Doc2Vec object from exampleModel.p
+2020-02-09 21:26:24,025 : MainThread : INFO : loading wv recursively from exampleModel.p.wv.* with mmap=None
+2020-02-09 21:26:24,025 : MainThread : INFO : loading vocabulary recursively from exampleModel.p.vocabulary.* with mmap=None
+2020-02-09 21:26:24,025 : MainThread : INFO : loading trainables recursively from exampleModel.p.trainables.* with mmap=None
+2020-02-09 21:26:24,025 : MainThread : INFO : loading docvecs recursively from exampleModel.p.docvecs.* with mmap=None
+2020-02-09 21:26:24,025 : MainThread : INFO : loaded exampleModel.p
+2020-02-09 21:26:24,025 : MainThread : INFO : doc2vec shape: ()
+2020-02-09 21:26:49,859 : MainThread : INFO : loading Doc2Vec object from exampleModel.p
+2020-02-09 21:26:49,864 : MainThread : INFO : loading wv recursively from exampleModel.p.wv.* with mmap=None
+2020-02-09 21:26:49,864 : MainThread : INFO : loading vocabulary recursively from exampleModel.p.vocabulary.* with mmap=None
+2020-02-09 21:26:49,864 : MainThread : INFO : loading trainables recursively from exampleModel.p.trainables.* with mmap=None
+2020-02-09 21:26:49,864 : MainThread : INFO : loading docvecs recursively from exampleModel.p.docvecs.* with mmap=None
+2020-02-09 21:26:49,865 : MainThread : INFO : loaded exampleModel.p
+2020-02-09 21:26:49,866 : MainThread : INFO : doc2vec shape: ()
+2020-02-09 21:28:03,299 : MainThread : INFO : loading Doc2Vec object from exampleModel.p
+2020-02-09 21:28:03,303 : MainThread : INFO : loading wv recursively from exampleModel.p.wv.* with mmap=None
+2020-02-09 21:28:03,303 : MainThread : INFO : loading vocabulary recursively from exampleModel.p.vocabulary.* with mmap=None
+2020-02-09 21:28:03,304 : MainThread : INFO : loading trainables recursively from exampleModel.p.trainables.* with mmap=None
+2020-02-09 21:28:03,304 : MainThread : INFO : loading docvecs recursively from exampleModel.p.docvecs.* with mmap=None
+2020-02-09 21:28:03,304 : MainThread : INFO : loaded exampleModel.p
+2020-02-09 21:28:03,304 : MainThread : INFO : doc2vec shape: ()
+2020-02-09 21:28:28,767 : MainThread : INFO : loading Doc2Vec object from exampleModel.p
+2020-02-09 21:28:28,772 : MainThread : INFO : loading wv recursively from exampleModel.p.wv.* with mmap=None
+2020-02-09 21:28:28,772 : MainThread : INFO : loading vocabulary recursively from exampleModel.p.vocabulary.* with mmap=None
+2020-02-09 21:28:28,772 : MainThread : INFO : loading trainables recursively from exampleModel.p.trainables.* with mmap=None
+2020-02-09 21:28:28,772 : MainThread : INFO : loading docvecs recursively from exampleModel.p.docvecs.* with mmap=None
+2020-02-09 21:28:28,772 : MainThread : INFO : loaded exampleModel.p
+2020-02-09 21:28:28,773 : MainThread : INFO : doc2vec shape: ()
+2020-02-09 21:29:05,812 : MainThread : INFO : loading Doc2Vec object from exampleModel.p
+2020-02-09 21:29:05,816 : MainThread : INFO : loading wv recursively from exampleModel.p.wv.* with mmap=None
+2020-02-09 21:29:05,816 : MainThread : INFO : loading vocabulary recursively from exampleModel.p.vocabulary.* with mmap=None
+2020-02-09 21:29:05,816 : MainThread : INFO : loading trainables recursively from exampleModel.p.trainables.* with mmap=None
+2020-02-09 21:29:05,816 : MainThread : INFO : loading docvecs recursively from exampleModel.p.docvecs.* with mmap=None
+2020-02-09 21:29:05,816 : MainThread : INFO : loaded exampleModel.p
+2020-02-09 21:29:05,817 : MainThread : INFO : doc2vec shape: ()
+2020-02-09 21:29:40,539 : MainThread : INFO : loading Doc2Vec object from exampleModel.p
+2020-02-09 21:29:40,543 : MainThread : INFO : loading wv recursively from exampleModel.p.wv.* with mmap=None
+2020-02-09 21:29:40,543 : MainThread : INFO : loading vocabulary recursively from exampleModel.p.vocabulary.* with mmap=None
+2020-02-09 21:29:40,543 : MainThread : INFO : loading trainables recursively from exampleModel.p.trainables.* with mmap=None
+2020-02-09 21:29:40,543 : MainThread : INFO : loading docvecs recursively from exampleModel.p.docvecs.* with mmap=None
+2020-02-09 21:29:40,544 : MainThread : INFO : loaded exampleModel.p
+2020-02-09 21:29:40,544 : MainThread : INFO : doc2vec shape: ()
+2020-02-09 21:31:26,683 : MainThread : INFO : loading Doc2Vec object from exampleModel.p
+2020-02-09 21:31:26,688 : MainThread : INFO : loading wv recursively from exampleModel.p.wv.* with mmap=None
+2020-02-09 21:31:26,688 : MainThread : INFO : loading vocabulary recursively from exampleModel.p.vocabulary.* with mmap=None
+2020-02-09 21:31:26,688 : MainThread : INFO : loading trainables recursively from exampleModel.p.trainables.* with mmap=None
+2020-02-09 21:31:26,688 : MainThread : INFO : loading docvecs recursively from exampleModel.p.docvecs.* with mmap=None
+2020-02-09 21:31:26,688 : MainThread : INFO : loaded exampleModel.p
+2020-02-09 21:31:26,689 : MainThread : INFO : doc2vec shape: ()
+2020-02-09 21:31:26,689 : MainThread : INFO : precomputing L2-norms of doc weight vectors
+2020-02-09 21:32:42,255 : MainThread : INFO : loading Doc2Vec object from exampleModel.p
+2020-02-09 21:32:42,259 : MainThread : INFO : loading wv recursively from exampleModel.p.wv.* with mmap=None
+2020-02-09 21:32:42,259 : MainThread : INFO : loading vocabulary recursively from exampleModel.p.vocabulary.* with mmap=None
+2020-02-09 21:32:42,259 : MainThread : INFO : loading trainables recursively from exampleModel.p.trainables.* with mmap=None
+2020-02-09 21:32:42,259 : MainThread : INFO : loading docvecs recursively from exampleModel.p.docvecs.* with mmap=None
+2020-02-09 21:32:42,259 : MainThread : INFO : loaded exampleModel.p
+2020-02-09 21:32:42,260 : MainThread : INFO : doc2vec shape: ()
+2020-02-09 21:32:42,260 : MainThread : INFO : precomputing L2-norms of doc weight vectors
+2020-02-09 21:33:02,488 : MainThread : INFO : loading Doc2Vec object from exampleModel.p
+2020-02-09 21:33:02,492 : MainThread : INFO : loading wv recursively from exampleModel.p.wv.* with mmap=None
+2020-02-09 21:33:02,492 : MainThread : INFO : loading vocabulary recursively from exampleModel.p.vocabulary.* with mmap=None
+2020-02-09 21:33:02,492 : MainThread : INFO : loading trainables recursively from exampleModel.p.trainables.* with mmap=None
+2020-02-09 21:33:02,492 : MainThread : INFO : loading docvecs recursively from exampleModel.p.docvecs.* with mmap=None
+2020-02-09 21:33:02,492 : MainThread : INFO : loaded exampleModel.p
+2020-02-09 21:33:02,493 : MainThread : INFO : doc2vec shape: ()
+2020-02-09 21:33:02,493 : MainThread : INFO : precomputing L2-norms of doc weight vectors
