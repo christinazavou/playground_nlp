@@ -322,3 +322,27 @@
 2020-02-09 21:33:02,492 : MainThread : INFO : loaded exampleModel.p
 2020-02-09 21:33:02,493 : MainThread : INFO : doc2vec shape: ()
 2020-02-09 21:33:02,493 : MainThread : INFO : precomputing L2-norms of doc weight vectors
+2020-03-14 18:59:29,960 : MainThread : INFO : loading Doc2Vec object from ../resources/exampleModel.p
+2020-03-14 18:59:29,964 : MainThread : INFO : loading wv recursively from ../resources/exampleModel.p.wv.* with mmap=None
+2020-03-14 18:59:29,965 : MainThread : INFO : loading vocabulary recursively from ../resources/exampleModel.p.vocabulary.* with mmap=None
+2020-03-14 18:59:29,965 : MainThread : INFO : loading trainables recursively from ../resources/exampleModel.p.trainables.* with mmap=None
+2020-03-14 18:59:29,965 : MainThread : INFO : loading docvecs recursively from ../resources/exampleModel.p.docvecs.* with mmap=None
+2020-03-14 18:59:29,965 : MainThread : INFO : loaded ../resources/exampleModel.p
+2020-03-14 18:59:29,965 : MainThread : INFO : doc2vec shape: ()
+2020-03-14 18:59:29,965 : MainThread : INFO : precomputing L2-norms of doc weight vectors
+2020-03-14 19:12:55,438 : MainThread : INFO : loading Doc2Vec object from ../resources/exampleModel.p
+2020-03-14 19:12:55,442 : MainThread : INFO : loading wv recursively from ../resources/exampleModel.p.wv.* with mmap=None
+2020-03-14 19:12:55,442 : MainThread : INFO : loading vocabulary recursively from ../resources/exampleModel.p.vocabulary.* with mmap=None
+2020-03-14 19:12:55,442 : MainThread : INFO : loading trainables recursively from ../resources/exampleModel.p.trainables.* with mmap=None
+2020-03-14 19:12:55,442 : MainThread : INFO : loading docvecs recursively from ../resources/exampleModel.p.docvecs.* with mmap=None
+2020-03-14 19:12:55,442 : MainThread : INFO : loaded ../resources/exampleModel.p
+2020-03-14 19:12:55,443 : MainThread : INFO : doc2vec shape: ()
+2020-03-14 19:12:55,443 : MainThread : INFO : precomputing L2-norms of doc weight vectors
+2020-03-14 19:24:30,151 : MainThread : INFO : loading Doc2Vec object from ../resources/exampleModel.p
+2020-03-14 19:24:30,155 : MainThread : INFO : loading wv recursively from ../resources/exampleModel.p.wv.* with mmap=None
+2020-03-14 19:24:30,155 : MainThread : INFO : loading vocabulary recursively from ../resources/exampleModel.p.vocabulary.* with mmap=None
+2020-03-14 19:24:30,155 : MainThread : INFO : loading trainables recursively from ../resources/exampleModel.p.trainables.* with mmap=None
+2020-03-14 19:24:30,156 : MainThread : INFO : loading docvecs recursively from ../resources/exampleModel.p.docvecs.* with mmap=None
+2020-03-14 19:24:30,156 : MainThread : INFO : loaded ../resources/exampleModel.p
+2020-03-14 19:24:30,156 : MainThread : INFO : doc2vec shape: ()
+2020-03-14 19:24:30,156 : MainThread : INFO : precomputing L2-norms of doc weight vectors

@@ -3,11 +3,11 @@ import unittest
 
 class TestTextUtilsMethods(unittest.TestCase):
 
-    def test_evaluate_value_or_dict(self):
-        from src.utils.text_utils import evaluate_value_or_dict
-        self.assertEqual('kati', evaluate_value_or_dict("kati"))
-        self.assertEqual({'a': 1}, evaluate_value_or_dict("{'a': 1}"))
-        self.assertEqual(4, evaluate_value_or_dict(4))
+    def test_get_variable_from_string(self):
+        from src.utils.text_utils import get_variable_from_string
+        self.assertEqual('kati', get_variable_from_string("kati"))
+        self.assertEqual({'a': 1}, get_variable_from_string("{'a': 1}"))
+        self.assertEqual(4, get_variable_from_string(4))
 
     def test_is_ascii(self):
         from src.utils.text_utils import is_ascii
@@ -22,10 +22,10 @@ class TestTextUtilsMethods(unittest.TestCase):
 
     def test_dict_to_str_to_dict(self):
         from src.utils.text_utils import dictionary_to_utf
-        from src.utils.text_utils import evaluate_value_or_dict
+        from src.utils.text_utils import get_variable_from_string
         init_dict = {'a': 1, 'b': 2}
         str_dict = dictionary_to_utf(init_dict)
-        dict_from_str = evaluate_value_or_dict(str_dict)
+        dict_from_str = get_variable_from_string(str_dict)
         self.assertEqual(init_dict, dict_from_str)
 
     def test_variable_to_utf8(self):

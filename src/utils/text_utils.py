@@ -6,7 +6,7 @@ import copy
 import re
 
 
-def evaluate_value_or_dict(value):
+def get_variable_from_string(value):
     try:
         # if s is a string representation of a dictionary then return the dictionary
         # for example return {'a': 1, 'b': 2} if the input string is "{'a': 1, 'b': 2}"

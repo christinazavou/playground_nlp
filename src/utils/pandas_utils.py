@@ -1,5 +1,5 @@
 from src.utils.text_utils import add_uni_grams_and_bi_grams_from_tokens
-from src.utils.text_utils import evaluate_value_or_dict
+from src.utils.text_utils import get_variable_from_string
 from src.utils.io_utils import read_df
 
 
@@ -18,7 +18,7 @@ def iter_tickets_on_field(field, input_file=None, df=None, use_bi_grams=False, a
             raise Exception('You should give either the data frame or the input file')
 
     for idx, row in df.iterrows():
-        text = evaluate_value_or_dict(row[field])
+        text = get_variable_from_string(row[field])
         yield idx, get_preprocessed_text(text, use_bi_grams, as_list)
 
 

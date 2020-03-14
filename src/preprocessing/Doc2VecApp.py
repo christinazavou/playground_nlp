@@ -7,14 +7,14 @@ from flask import Flask
 from multiprocessing import freeze_support
 from src.preprocessing.Doc2Vec import CorpusToDoc2Vec
 from src.utils.pandas_utils import read_df
-from src.utils.text_utils import evaluate_value_or_dict
+from src.utils.text_utils import get_variable_from_string
 
 
 app = Flask(__name__)
 
-_df_file = '/home/christina/Documents/playground_nlp/test/exampleData.csv'
+_df_file = '../resources/exampleData.csv'
 _field_text = 'textpreprocessed'
-_model_file = '/home/christina/Documents/playground_nlp/test/preprocessing/exampleModel.p'
+_model_file = '../resources/exampleModel.p'
 
 model = CorpusToDoc2Vec(_df_file,
                         _field_text,
@@ -25,26 +25,27 @@ df = read_df(_df_file)
 
 @app.route("/show_similar_doc2vec_tickets/<instance_id>/<field_option>")
 def show_similar_doc2vec_tickets(instance_id, field_option):
-    try:
-        idx = df[df['instanceId'] == instance_id].index.tolist()[0]
-    except:
+    """
+    if field_option is 1, it shows the similar documents (on the model field)
+    if field option is a string, it shows that field of the similar documents
+    :param instance_id:
+    :param field_option:
+    :return:
+    """
+    if int(instance_id) not in df.index:
         return 'no such instance'
-    if int(field_option) == 1:
-        resutls = model.show_similar('SENT_{}'.format(idx), top_n=10, field='text')
-        to_show = {}
-        for idx, text in resutls.iteritems():
-            if isinstance(evaluate_value_or_dict(text), list):
-                to_show[idx] = evaluate_value_or_dict(text)[0]
-            else:
-                to_show[idx] = text
-        return json.dumps(to_show, encoding='utf8', indent=2)
+    if field_option == '1':
+        docs = model.show_similar_documents('SENT_{}'.format(instance_id), top_n=10, field_to_show=None)
     else:
-        to_show = model.show_similar('SENT_{}'.format(idx), top_n=10, model_field=True)
-        return json.dumps(to_show, encoding='utf8', indent=2)
+        docs = model.show_similar_documents('SENT_{}'.format(instance_id), top_n=10, field_to_show=field_option)
+    to_show = {}
+    for idx, text in docs.items():
+        to_show[str(idx)] = str(text)
+    return json.dumps(to_show, indent=2)
 
 
 if __name__ == '__main__':
 
     freeze_support()
 
-    app.run()
+    app.run(host='localhost', port=5000)
