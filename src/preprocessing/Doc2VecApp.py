@@ -12,9 +12,9 @@ from src.utils.text_utils import get_variable_from_string
 
 app = Flask(__name__)
 
-_df_file = '../resources/exampleData.csv'
+_df_file = '../..resources/exampleData.csv'
 _field_text = 'textpreprocessed'
-_model_file = '../resources/exampleModel.p'
+_model_file = '../..resources/exampleModel.p'
 
 model = CorpusToDoc2Vec(_df_file,
                         _field_text,

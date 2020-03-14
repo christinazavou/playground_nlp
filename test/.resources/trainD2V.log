@@ -346,3 +346,4 @@
 2020-03-14 19:24:30,156 : MainThread : INFO : loaded ../resources/exampleModel.p
 2020-03-14 19:24:30,156 : MainThread : INFO : doc2vec shape: ()
 2020-03-14 19:24:30,156 : MainThread : INFO : precomputing L2-norms of doc weight vectors
+2020-03-14 20:29:05,756 : MainThread : INFO : doc2vec shape: ()

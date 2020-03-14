@@ -11,8 +11,6 @@ def load_zip_df(filename, columns=None):
     if '.p' in filename:
         f = gzip.GzipFile(filename, 'rb')
 
-        # df = pickle.load(f)
-
         # for compatibility with Python2 and Python3:
         u = pickle._Unpickler(f)
         u.encoding = 'latin1'
