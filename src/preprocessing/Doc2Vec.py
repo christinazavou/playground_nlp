@@ -47,11 +47,6 @@ class CorpusToDoc2Vec(object):
         self.workers = workers
         self.epochs = epochs
 
-        # logging.basicConfig(
-        #     format='%(asctime)s : %(threadName)s : %(levelname)s : %(message)s',
-        #     level=logging.INFO,
-        #     filename=os.path.join(os.path.dirname(os.path.realpath(model_file)), 'trainD2V.log')
-        # )
         self.logger.setLevel(logging.INFO)
         fh = logging.FileHandler(os.path.join(os.path.dirname(os.path.realpath(model_file)), 'trainD2V.log'))
         formatter = logging.Formatter('%(asctime)s : %(threadName)s : %(levelname)s : %(message)s')

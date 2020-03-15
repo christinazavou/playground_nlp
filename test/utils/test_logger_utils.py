@@ -15,9 +15,9 @@ class TestLoggerUtilsMethods(unittest.TestCase):
         shutil.rmtree(self.test_dir)
 
     def test_manage_logger(self):
-        from src.utils.logger_utils import manage_logger
+        from src.utils.logger_utils import get_logger
 
-        logger = manage_logger(__name__, 'INFO', self.test_dir, os.path.join(self.test_dir, 'output.log'))
+        logger = get_logger(__name__, 'INFO', self.test_dir, os.path.join(self.test_dir, 'output.log'))
         logger.info('My unit test is fine.')
 
         f = open(os.path.join(self.test_dir, 'output.log'))

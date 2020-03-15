@@ -5,6 +5,7 @@ import json
 import pickle
 import gzip
 import pandas as pd
+import os
 
 
 def load_zip_df(filename, columns=None):
@@ -66,6 +67,11 @@ def store_pickle(obj, filename, protocol=None):
 
 
 def load_pickle(filename):
+    """
+    :param filename:
+    :return:
+    :raises FileNotFoundError
+    """
     if '.zip' in filename:
         f = gzip.GzipFile(filename, 'rb')
         obj = pickle.load(f)
@@ -117,6 +123,10 @@ def store_json(data, json_file):
         store_zip_json(data, json_file)
     else:
         json.dump(data, open(json_file, 'w'), encoding='utf8', indent=2)
+
+
+def file_exists(filename):
+    return os.path.isfile(filename)
 
 
 if __name__ == '__main__':
