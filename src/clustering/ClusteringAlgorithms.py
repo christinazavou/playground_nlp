@@ -10,8 +10,8 @@ from multiprocessing import Pool, Queue
 from abc import ABCMeta, abstractmethod
 from collections import OrderedDict, Counter
 
-from src.pre_process.StemToWord import StemToWord
-from src.visualization.topic_visualization import topic_cloud
+from src.preprocessing.StemToWord import StemToWord
+from src.visualization.topic import topic_cloud
 from .evaluation import topics_cohesion_sparse, silhouette_coefficient
 from src.utils.utils import read_df, store_df, iter_tickets_on_field, append_column, dict_to_utf, \
     iter_tickets_with_degree, bi_grams_on_sentences_list, eval_utf, chunk_serial, manage_logger, chunk_df_serial, \
@@ -25,68 +25,68 @@ logging.basicConfig(format='%(levelname)s : %(message)s', level=logging.INFO)
 logging.root.level = logging.INFO
 
 
-def worker_fit_labels(input_queue, result_queue):
-    """
-    Perform get_fit_labels for each (chunk_no, chunk, model) 3-tuple from the
-    input queue, placing the resulting state into the result queue.
-    """
-    logging.debug("worker process entering worker_fit_labels loop")
-    while True:
-        logging.debug("getting a new job")
-        chunk_no, chunk, worker_model, chunk_first, chunk_last = input_queue.get()
-        # labels, distributions, probabilities = [], [], []
-        labels, distributions, probabilities = np.zeros(len(chunk)), np.zeros(len(chunk)).astype(object), np.zeros(len(chunk)).astype(tuple)
-        logging.debug("processing chunk #%i of %i documents", chunk_no, len(chunk))
-        for it, i in enumerate(chunk):
-            labels[it], distributions[it], probabilities[it] = worker_model.predict(i, idx=it)
-        del chunk
-        logging.debug("processed chunk, queuing the result")
-        result_queue.put((labels, distributions, probabilities, chunk_first, chunk_last))
-        del worker_model
-        logging.debug("result put")
-
-
-def worker_find_cluster_and_text(input_queue, result_queue):
-    logging.debug("worker process entering worker_fit_labels loop")
-    while True:
-        logging.debug("getting a new job")
-        chunk_no, chunk_df, cluster_field, text_field, degree_field, use_bi_grams = input_queue.get()
-        logging.debug("processing chunk #%i of %i documents", chunk_no, len(chunk_df))
-        cluster_indices, cluster_texts_with_degree, cluster_texts = {}, {}, {}
-        for cluster, cluster_df in chunk_df.groupby(cluster_field):
-            # if cluster == 498.:
-            #     print cluster_df['instanceId'].values, '\n'
-            cluster = int(cluster)
-            cluster_indices.setdefault(unicode(cluster), [])
-            if degree_field:
-                cluster_indices[unicode(cluster)] += [
-                    u'idx {} instance {} assignment {} {}'.format(
-                        idx, row[u'instanceId'], cluster, row[degree_field])
-                    for idx, row in cluster_df.iterrows()
-                    ]
-            else:
-                cluster_indices[unicode(cluster)] += [
-                    u'idx {} instance {}'.format(idx, row[u'instanceId']) for idx, row in cluster_df.iterrows()
-                    ]
-
-            if degree_field:
-                cluster_texts_with_degree.setdefault(unicode(cluster), u'')
-                cluster_texts_with_degree[unicode(cluster)] += \
-                    u' '.join([text for _, text in iter_tickets_with_degree(
-                        text_field, degree_field, data=cluster_df, use_bi_grams=use_bi_grams)]
-                              ) + u' '
-
-            cluster_texts.setdefault(unicode(cluster), u'')
-            cluster_texts[unicode(cluster)] += \
-                u' '.join([text for _, text in iter_tickets_on_field(
-                    text_field, data=cluster_df, use_bi_grams=use_bi_grams, as_list=False)]
-                          ) + u' '
-
-        del chunk_df
-        logging.debug("processed chunk, queuing the result")
-        result_queue.put((cluster_indices, cluster_texts, cluster_texts_with_degree))
-        logging.debug("result put")
-
+# def worker_fit_labels(input_queue, result_queue):
+#     """
+#     Perform get_fit_labels for each (chunk_no, chunk, model) 3-tuple from the
+#     input queue, placing the resulting state into the result queue.
+#     """
+#     logging.debug("worker process entering worker_fit_labels loop")
+#     while True:
+#         logging.debug("getting a new job")
+#         chunk_no, chunk, worker_model, chunk_first, chunk_last = input_queue.get()
+#         # labels, distributions, probabilities = [], [], []
+#         labels, distributions, probabilities = np.zeros(len(chunk)), np.zeros(len(chunk)).astype(object), np.zeros(len(chunk)).astype(tuple)
+#         logging.debug("processing chunk #%i of %i documents", chunk_no, len(chunk))
+#         for it, i in enumerate(chunk):
+#             labels[it], distributions[it], probabilities[it] = worker_model.predict(i, idx=it)
+#         del chunk
+#         logging.debug("processed chunk, queuing the result")
+#         result_queue.put((labels, distributions, probabilities, chunk_first, chunk_last))
+#         del worker_model
+#         logging.debug("result put")
+#
+#
+# def worker_find_cluster_and_text(input_queue, result_queue):
+#     logging.debug("worker process entering worker_fit_labels loop")
+#     while True:
+#         logging.debug("getting a new job")
+#         chunk_no, chunk_df, cluster_field, text_field, degree_field, use_bi_grams = input_queue.get()
+#         logging.debug("processing chunk #%i of %i documents", chunk_no, len(chunk_df))
+#         cluster_indices, cluster_texts_with_degree, cluster_texts = {}, {}, {}
+#         for cluster, cluster_df in chunk_df.groupby(cluster_field):
+#             # if cluster == 498.:
+#             #     print cluster_df['instanceId'].values, '\n'
+#             cluster = int(cluster)
+#             cluster_indices.setdefault(unicode(cluster), [])
+#             if degree_field:
+#                 cluster_indices[unicode(cluster)] += [
+#                     u'idx {} instance {} assignment {} {}'.format(
+#                         idx, row[u'instanceId'], cluster, row[degree_field])
+#                     for idx, row in cluster_df.iterrows()
+#                     ]
+#             else:
+#                 cluster_indices[unicode(cluster)] += [
+#                     u'idx {} instance {}'.format(idx, row[u'instanceId']) for idx, row in cluster_df.iterrows()
+#                     ]
+#
+#             if degree_field:
+#                 cluster_texts_with_degree.setdefault(unicode(cluster), u'')
+#                 cluster_texts_with_degree[unicode(cluster)] += \
+#                     u' '.join([text for _, text in iter_tickets_with_degree(
+#                         text_field, degree_field, data=cluster_df, use_bi_grams=use_bi_grams)]
+#                               ) + u' '
+#
+#             cluster_texts.setdefault(unicode(cluster), u'')
+#             cluster_texts[unicode(cluster)] += \
+#                 u' '.join([text for _, text in iter_tickets_on_field(
+#                     text_field, data=cluster_df, use_bi_grams=use_bi_grams, as_list=False)]
+#                           ) + u' '
+#
+#         del chunk_df
+#         logging.debug("processed chunk, queuing the result")
+#         result_queue.put((cluster_indices, cluster_texts, cluster_texts_with_degree))
+#         logging.debug("result put")
+#
 
 class ClusterModel:
     __metaclass__ = ABCMeta
@@ -488,103 +488,103 @@ class ClusterModel:
         store_json(ordered_cluster_dict, clusters_file)
 
 
-def append_to_json_clusters(new_key, clusters_new_values, clusters_dict=None, clusters_dict_file=None):
-    if not clusters_dict and clusters_dict_file:
-        clusters_dict = read_json(clusters_dict_file)
-    if '1' in clusters_dict.keys():
-        if isinstance(clusters_dict['1'], dict) and new_key in clusters_dict['1'].keys():  # cluster 1 should always exists
-    # if key_exists(clusters_dict, new_key):
-            return
-    for cluster, new_values in clusters_new_values.iteritems():
-        if cluster in clusters_dict.keys():
-            tmp = clusters_dict[cluster]
-            tmp.update({new_key: new_values})
-            clusters_dict[cluster] = tmp
-            # clusters_dict[cluster] = cluster_update(clusters_dict[cluster], {new_key: new_values})
-        else:
-            clusters_dict[cluster] = {new_key: new_values}
-    if clusters_dict_file:
-        store_json(clusters_dict, clusters_dict_file)
-    return clusters_dict
-
-
-def key_exists(clusters_dict, key):
-    if '1' in clusters_dict.keys():
-        if isinstance(clusters_dict['1'], dict) and key in clusters_dict['1'].keys():  # cluster 1 should always exists
-            return True
-    return False
-
-
-def cluster_update(cluster_dict, new_dict):
-    tmp = cluster_dict
-    tmp.update(new_dict)
-    return tmp
-
-
-def get_clusters_keys(kea_obj, stw, only_predictive, only_freq, init_class):
-    clusters_keys = {}
-    for cluster in range(kea_obj.tf.shape[0]):
-        if cluster % 50 == 0:
-            logging.info('getting keys of cluster {}'.format(cluster))
-        keys = kea_obj.get_doc_keywords(
-            cluster, 7, stw=stw, only_predictive=only_predictive, only_freq=only_freq, with_degree=True
-        )
-        sorted_keys = sorted(keys, key=lambda tup: tup[1], reverse=True)
-        clusters_keys[cluster + init_class] = sorted_keys
-    return clusters_keys
-
-
-def save_clusters_labels_and_tokenized_text_for_mongo(model, run_id):
-    df_list = list(read_df(model.data_file))
-    if u'cluster{}-keywords'.format(model.name) in df_list and u'cluster{}-upto20'.format(model.name) in df_list \
-            and u'{}-tokenized'.format(model.field) in df_list:
-        return
-    clusters_keys_up_to_20 = model.get_sorted_clusters_labels(use_stw=False, num_words=20, with_degree=True)
-    clusters_keys_to_show = {}
-    for cluster in clusters_keys_up_to_20.keys():
-        keys_to_show = sorted(clusters_keys_up_to_20[cluster], key=lambda x: x[1], reverse=True)[:5]
-        keys_up_to_20 = [key for key, degree in clusters_keys_up_to_20[cluster]]
-        keys_to_show = [key for key, degree in keys_to_show]
-        keys_to_show = keep_some_grams(keys_to_show)
-        for i, key in enumerate(keys_to_show):
-            keys = key.split('_')
-            keys_to_show[i] = u' '.join([model.stw.find_word(w) for w in keys])
-        clusters_keys_up_to_20[cluster] = keys_up_to_20
-        clusters_keys_to_show[cluster] = keys_to_show
-    df = read_df(model.data_file)
-    for idx, row in df.iterrows():
-        cluster = int(row[u'cluster{}'.format(model.name)])
-        if cluster == -1:
-            df.set_value(idx, u'cluster{}-keywords'.format(model.name), unicode('no-keywords'))
-            df.set_value(idx, u'cluster{}-upto20'.format(model.name), unicode(''))
-            df.set_value(idx, u'{}-tokenized'.format(model.field), unicode(u', '.join(i for i in bi_grams_on_sentences_list(eval_utf(row[model.field])))))
-            df.set_value(idx, u'runId', run_id)
-            df.set_value(idx, u'cluster{}-clustering_text'.format(model.name), u' '.join(eval_utf(row[model.field.replace('preprocessed', '')])))
-        else:
-            df.set_value(idx, u'cluster{}-keywords'.format(model.name), unicode(u', '.join(i for i in clusters_keys_to_show[cluster])))
-            df.set_value(idx, u'cluster{}-upto20'.format(model.name), unicode(u', '.join(i for i in clusters_keys_up_to_20[cluster])))
-            df.set_value(idx, u'{}-tokenized'.format(model.field), unicode(u', '.join(i for i in bi_grams_on_sentences_list(eval_utf(row[model.field])))))
-            df.set_value(idx, u'runId', run_id)
-            df.set_value(idx, u'cluster{}-clustering_text'.format(model.name), u' '.join(eval_utf(row[model.field.replace('preprocessed', '')])))
-    store_df(df, model.data_file)
-
-
-def real_text(row, field):
-    return u' '.join(eval_utf(row[field]))
-
-
-def keep_some_grams(tokens):
-    keep_tokens = tokens
-    to_del = []
-    for token in keep_tokens:
-        if '_' not in token:
-            for token2 in keep_tokens:
-                if '_' in token2 and token in token2.split('_'):
-                    idx = keep_tokens.index(token)
-                    if idx not in to_del:
-                        to_del.append(idx)
-    return_tokens = []
-    for idx in range(len(keep_tokens)):
-        if idx not in to_del:
-            return_tokens.append(keep_tokens[idx])
-    return return_tokens
+# def append_to_json_clusters(new_key, clusters_new_values, clusters_dict=None, clusters_dict_file=None):
+#     if not clusters_dict and clusters_dict_file:
+#         clusters_dict = read_json(clusters_dict_file)
+#     if '1' in clusters_dict.keys():
+#         if isinstance(clusters_dict['1'], dict) and new_key in clusters_dict['1'].keys():  # cluster 1 should always exists
+#     # if key_exists(clusters_dict, new_key):
+#             return
+#     for cluster, new_values in clusters_new_values.iteritems():
+#         if cluster in clusters_dict.keys():
+#             tmp = clusters_dict[cluster]
+#             tmp.update({new_key: new_values})
+#             clusters_dict[cluster] = tmp
+#             # clusters_dict[cluster] = cluster_update(clusters_dict[cluster], {new_key: new_values})
+#         else:
+#             clusters_dict[cluster] = {new_key: new_values}
+#     if clusters_dict_file:
+#         store_json(clusters_dict, clusters_dict_file)
+#     return clusters_dict
+#
+#
+# def key_exists(clusters_dict, key):
+#     if '1' in clusters_dict.keys():
+#         if isinstance(clusters_dict['1'], dict) and key in clusters_dict['1'].keys():  # cluster 1 should always exists
+#             return True
+#     return False
+#
+#
+# def cluster_update(cluster_dict, new_dict):
+#     tmp = cluster_dict
+#     tmp.update(new_dict)
+#     return tmp
+#
+#
+# def get_clusters_keys(kea_obj, stw, only_predictive, only_freq, init_class):
+#     clusters_keys = {}
+#     for cluster in range(kea_obj.tf.shape[0]):
+#         if cluster % 50 == 0:
+#             logging.info('getting keys of cluster {}'.format(cluster))
+#         keys = kea_obj.get_doc_keywords(
+#             cluster, 7, stw=stw, only_predictive=only_predictive, only_freq=only_freq, with_degree=True
+#         )
+#         sorted_keys = sorted(keys, key=lambda tup: tup[1], reverse=True)
+#         clusters_keys[cluster + init_class] = sorted_keys
+#     return clusters_keys
+#
+#
+# def save_clusters_labels_and_tokenized_text_for_mongo(model, run_id):
+#     df_list = list(read_df(model.data_file))
+#     if u'cluster{}-keywords'.format(model.name) in df_list and u'cluster{}-upto20'.format(model.name) in df_list \
+#             and u'{}-tokenized'.format(model.field) in df_list:
+#         return
+#     clusters_keys_up_to_20 = model.get_sorted_clusters_labels(use_stw=False, num_words=20, with_degree=True)
+#     clusters_keys_to_show = {}
+#     for cluster in clusters_keys_up_to_20.keys():
+#         keys_to_show = sorted(clusters_keys_up_to_20[cluster], key=lambda x: x[1], reverse=True)[:5]
+#         keys_up_to_20 = [key for key, degree in clusters_keys_up_to_20[cluster]]
+#         keys_to_show = [key for key, degree in keys_to_show]
+#         keys_to_show = keep_some_grams(keys_to_show)
+#         for i, key in enumerate(keys_to_show):
+#             keys = key.split('_')
+#             keys_to_show[i] = u' '.join([model.stw.find_word(w) for w in keys])
+#         clusters_keys_up_to_20[cluster] = keys_up_to_20
+#         clusters_keys_to_show[cluster] = keys_to_show
+#     df = read_df(model.data_file)
+#     for idx, row in df.iterrows():
+#         cluster = int(row[u'cluster{}'.format(model.name)])
+#         if cluster == -1:
+#             df.set_value(idx, u'cluster{}-keywords'.format(model.name), unicode('no-keywords'))
+#             df.set_value(idx, u'cluster{}-upto20'.format(model.name), unicode(''))
+#             df.set_value(idx, u'{}-tokenized'.format(model.field), unicode(u', '.join(i for i in bi_grams_on_sentences_list(eval_utf(row[model.field])))))
+#             df.set_value(idx, u'runId', run_id)
+#             df.set_value(idx, u'cluster{}-clustering_text'.format(model.name), u' '.join(eval_utf(row[model.field.replace('preprocessed', '')])))
+#         else:
+#             df.set_value(idx, u'cluster{}-keywords'.format(model.name), unicode(u', '.join(i for i in clusters_keys_to_show[cluster])))
+#             df.set_value(idx, u'cluster{}-upto20'.format(model.name), unicode(u', '.join(i for i in clusters_keys_up_to_20[cluster])))
+#             df.set_value(idx, u'{}-tokenized'.format(model.field), unicode(u', '.join(i for i in bi_grams_on_sentences_list(eval_utf(row[model.field])))))
+#             df.set_value(idx, u'runId', run_id)
+#             df.set_value(idx, u'cluster{}-clustering_text'.format(model.name), u' '.join(eval_utf(row[model.field.replace('preprocessed', '')])))
+#     store_df(df, model.data_file)
+#
+#
+# def real_text(row, field):
+#     return u' '.join(eval_utf(row[field]))
+#
+#
+# def keep_some_grams(tokens):
+#     keep_tokens = tokens
+#     to_del = []
+#     for token in keep_tokens:
+#         if '_' not in token:
+#             for token2 in keep_tokens:
+#                 if '_' in token2 and token in token2.split('_'):
+#                     idx = keep_tokens.index(token)
+#                     if idx not in to_del:
+#                         to_del.append(idx)
+#     return_tokens = []
+#     for idx in range(len(keep_tokens)):
+#         if idx not in to_del:
+#             return_tokens.append(keep_tokens[idx])
+#     return return_tokens

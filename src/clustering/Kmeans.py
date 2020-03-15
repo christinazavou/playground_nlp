@@ -8,12 +8,13 @@ from sklearn.cluster import KMeans
 from sklearn.decomposition import TruncatedSVD
 from sklearn.preprocessing import Normalizer
 from sklearn.pipeline import make_pipeline
-from src.utils.utils import iter_tickets_on_field
+from src.utils.pandas_utils import iter_tickets_on_field
 from sklearn.preprocessing import StandardScaler
-from src.pre_process.Doc2Vec import CorpusToDoc2Vec
+from src.preprocessing.Doc2Vec import CorpusToDoc2Vec
 from sklearn.feature_extraction.text import TfidfVectorizer
 from .ClusteringAlgorithms import ClusterModel
-from src.utils.utils import read_df, manage_logger
+from src.utils.io_utils import read_df
+from src.utils.logger_utils import get_logger
 
 
 class Kmeans_Model(ClusterModel):
