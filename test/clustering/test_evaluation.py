@@ -1,4 +1,5 @@
 import unittest
+
 from scipy.sparse import csr_matrix
 
 from src.clustering.evaluation import ClusterEvaluator
@@ -26,6 +27,7 @@ class TestEvaluation(unittest.TestCase):
         self.assertTrue(-1 <= sc <= 1)
 
     def test_topic_coherence(self):
+        # NOTE: docId, topicId and wordId starts from zero
 
         corpus = [
             # NUM_DOCS x NUM_WORDS (reversed from gensim corpus representation)
@@ -40,14 +42,16 @@ class TestEvaluation(unittest.TestCase):
 
         words_ids_per_topic = {
             # topicId: [word1, word10, word2,..]  # cutted list of K top words
-            1: [1,3,5],
-            2: [2,4,5]
+            1: [100, 300, 400],
+            2: [200, 400]
         }
 
         sparse_corpus = csr_matrix(corpus)
 
         cluster_evaluator = ClusterEvaluator()
-        cluster_evaluator.topics_cohesion_sparse(sparse_corpus, words_ids_per_topic)
+        cohesion_per_topic = cluster_evaluator.topics_cohesion_sparse(sparse_corpus, [0, 100, 200, 300, 400],
+                                                                      words_ids_per_topic)
+        [self.assertTrue(-1 <= cohesion_per_topic[topic] <= 1) for topic in words_ids_per_topic.keys()]
 
 
 if __name__ == '__main__':
