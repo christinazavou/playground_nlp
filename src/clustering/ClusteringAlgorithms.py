@@ -1,23 +1,25 @@
 # -*- coding: utf-8 -*-
-import re
-import os
-import time
 import logging
+import os
+import re
+import time
 import warnings
-import numpy as np
-from queue import Full
-from multiprocessing import Pool, Queue
 from abc import ABCMeta, abstractmethod
 from collections import OrderedDict, Counter
 
+import numpy as np
+
+from src.clustering.evaluation import ClusterEvaluator
 from src.preprocessing.StemToWord import StemToWord
+from src.utils.io_utils import load_pickle, store_pickle, store_json, read_json
+from src.utils.io_utils import read_df
+from src.utils.logger_utils import get_logger
+from src.utils.pandas_utils import iter_tickets_on_field
 from src.visualization.topic import topic_cloud
-from .evaluation import topics_cohesion_sparse, silhouette_coefficient
-from src.utils.utils import read_df, store_df, iter_tickets_on_field, append_column, dict_to_utf, \
-    iter_tickets_with_degree, bi_grams_on_sentences_list, eval_utf, chunk_serial, manage_logger, chunk_df_serial, \
-    read_json, store_json
-from src.utils.store_load_zipped import load_pickle, store_pickle
-from src.visualization.high_dim_data_projection import project_wrapper
+
+# from src.utils.utils import  append_column, dict_to_utf, iter_tickets_with_degree, bi_grams_on_sentences_list, eval_utf,\
+#     chunk_serial, chunk_df_serial
+# from src.visualization.high_dim_data_projection import project_wrapper
 
 
 warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')
@@ -169,19 +171,19 @@ class ClusterModel:
         if cluster_texts_with_degree:
             store_json(cluster_texts_with_degree, clusters_text_file.replace('.json', '.withdegree.json'))
 
-    def save_clusters_labels_json(self, clusters_labels_file, **kwargs):
-        logging.info('saving the clusters labels...')
-        clusters_dict = {}
-        if os.path.isfile(clusters_labels_file):
-            clusters_dict = read_json(clusters_labels_file)
-        if '1' in clusters_dict.keys():
-            if isinstance(clusters_dict['1'], dict) and 'clusters_labels' in clusters_dict['1'].keys():  # cluster 1 should always exists
-        # if key_exists(clusters_dict, 'clusters_labels'):
-                logging.info('clusters labels exist')
-                return
-        clusters_labels = self.get_sorted_clusters_labels(**kwargs)
-        clusters_dict = append_to_json_clusters('clusters_labels', dict_to_utf(clusters_labels), clusters_dict)
-        store_json(clusters_dict, clusters_labels_file)
+    # def save_clusters_labels_json(self, clusters_labels_file, **kwargs):
+    #     logging.info('saving the clusters labels...')
+    #     clusters_dict = {}
+    #     if os.path.isfile(clusters_labels_file):
+    #         clusters_dict = read_json(clusters_labels_file)
+    #     if '1' in clusters_dict.keys():
+    #         if isinstance(clusters_dict['1'], dict) and 'clusters_labels' in clusters_dict['1'].keys():  # cluster 1 should always exists
+    #     # if key_exists(clusters_dict, 'clusters_labels'):
+    #             logging.info('clusters labels exist')
+    #             return
+    #     clusters_labels = self.get_sorted_clusters_labels(**kwargs)
+    #     clusters_dict = append_to_json_clusters('clusters_labels', dict_to_utf(clusters_labels), clusters_dict)
+    #     store_json(clusters_dict, clusters_labels_file)
 
     # def save_fitted_labels(self, **kwargs):
     #     list_df = list(read_df(self.data_file))
@@ -208,7 +210,7 @@ class ClusterModel:
     #     return labels, distributions, degrees
 
     def evaluate(self, metric='silhouette', **kwargs):  # currently only silhouette_coefficient evaluation!
-        logger = manage_logger(__name__, 'INFO', os.path.dirname(os.path.realpath(self.model_file)), 'train.log')
+        logger = get_logger(__name__, 'INFO', os.path.dirname(os.path.realpath(self.model_file)), 'train.log')
         if metric == 'silhouette':
             if 'silhouette' not in self.__dict__:
                 s_time = time.time()
@@ -221,7 +223,7 @@ class ClusterModel:
                 labels = labels[0:samples]
                 logger.info('evaluating the silhouette coefficient on {} samples...'.format(samples))
                 corpus = corpus[0:samples]
-                c = silhouette_coefficient(corpus, labels)
+                c = ClusterEvaluator().silhouette_coefficient(corpus, labels)
                 logger.info('calculations finished after {} seconds. '.format(time.time()-s_time))
                 self.silhouette = c
                 logger.info('silhouette coefficient = {}'.format(self.silhouette))
@@ -233,7 +235,8 @@ class ClusterModel:
                 s_time = time.time()
                 logger.info('calculating cohesion per topic...')
                 words_ids_per_class = self.words_ids_per_topic()
-                self.cohesion_per_topic = topics_cohesion_sparse(self.get_sparse_corpus(), words_ids_per_class)
+                self.cohesion_per_topic = ClusterEvaluator().topics_cohesion_sparse(self.get_sparse_corpus(),
+                                                                                    words_ids_per_class)
                 self.save()
                 logger.info('finished calculations after {} seconds.'.format(time.time()-s_time))
                 logger.info('cohesions = {}'.format(self.cohesion_per_topic))
@@ -251,10 +254,10 @@ class ClusterModel:
                 try:
                     topic_cloud(labels, os.path.join(folder, 'cluster_{}.png'.format(cluster)))
                 except:
-                    print 'could not create figure for topic {} with labels {}'.format(cluster, labels)
+                    print('could not create figure for topic {} with labels {}'.format(cluster, labels))
         if 't_sne' in kwargs.keys() and kwargs['t_sne']:
             if not os.path.isfile(self.model_file.replace('.p', 't-sne.png')):
-                logger = manage_logger(__name__, 'INFO', os.path.dirname(os.path.realpath(self.model_file)), 'train.log')
+                logger = get_logger(__name__, 'INFO', os.path.dirname(os.path.realpath(self.model_file)), 'train.log')
 
                 labels, _, _ = self.labels_exists(**kwargs)
                 if not labels:
@@ -265,78 +268,78 @@ class ClusterModel:
                                 n_iter=[500, 1000, 5000], metric=['cosine', 'cosine', 'cosine'],
                                 init=['pca', 'random', 'pca'], random_state=[200, 200, 200])
 
-    def save_fitted_labels_parallel(self, workers=2, chunksize=10000, **kwargs):
+                # def save_fitted_labels_parallel(self, workers=2, chunksize=10000, **kwargs):
+                #
+                #     logging.basicConfig(format='%(levelname)s : %(message)s', level=logging.DEBUG)
+                #     logging.root.level = logging.DEBUG
+                #
+                #     labels, distributions, degrees = self.labels_exists(**kwargs)
+                #     if labels:
+                #         return labels, distributions, degrees
+                #
+                #     s_time = time.time()
+                #     grouper = chunk_serial  # choose according to a parameter which function to call when call grouper() !!!!
+                #
+                #     job_queue = Queue(2*workers)
+                #     result_queue = Queue()
+                #
+                #     pool = Pool(workers, worker_fit_labels, (job_queue, result_queue,))
+                #     queue_size, real_len = [0], 0  # integer can't be accessed in inner definition so list used
+                #     # labels, distributions, degrees = [], [], []
+                #     labels, distributions, degrees = \
+                #         np.zeros(len(self.corpus)), np.zeros(len(self.corpus)).astype(object), np.zeros(len(self.corpus)).astype(tuple)
 
-        logging.basicConfig(format='%(levelname)s : %(message)s', level=logging.DEBUG)
-        logging.root.level = logging.DEBUG
-
-        labels, distributions, degrees = self.labels_exists(**kwargs)
-        if labels:
-            return labels, distributions, degrees
-
-        s_time = time.time()
-        grouper = chunk_serial  # choose according to a parameter which function to call when call grouper() !!!!
-
-        job_queue = Queue(2*workers)
-        result_queue = Queue()
-
-        pool = Pool(workers, worker_fit_labels, (job_queue, result_queue,))
-        queue_size, real_len = [0], 0  # integer can't be accessed in inner definition so list used
-        # labels, distributions, degrees = [], [], []
-        labels, distributions, degrees = \
-            np.zeros(len(self.corpus)), np.zeros(len(self.corpus)).astype(object), np.zeros(len(self.corpus)).astype(tuple)
-
-        def process_result_queue():
-            """Clear the result queue, merging all intermediate results"""
-            while not result_queue.empty():
-                lab, distr, degr, ch_f, ch_l = result_queue.get()
-                labels[ch_f:ch_l] = lab
-                distributions[ch_f:ch_l] = distr
-                degrees[ch_f:ch_l] = degr
-                queue_size[0] -= 1
-
-        chunk_stream = grouper(self.corpus, chunksize)
-        chunk_first, chunk_last = 0, 0
-        for chunk_no, chunk in enumerate(chunk_stream):
-            chunk_first = chunk_last
-            chunk_last = chunk_first + len(chunk)
-
-            real_len += len(chunk)  # keep track of how many documents we've processed so far
-
-            # put the chunk into the workers' input job queue
-            chunk_put = False
-            while not chunk_put:
-                try:
-                    # job_queue.put((chunk_no, chunk, self.model, chunk_first, chunk_last), block=False)
-                    job_queue.put((chunk_no, chunk, self, chunk_first, chunk_last), block=False)
-                    chunk_put = True
-                    queue_size[0] += 1
-                    logging.info('PROGRESS: dispatched chunk #{} = '
-                                 'documents {}-{}, outstanding queue size {}'.format(
-                                  chunk_no, chunk_first, chunk_last, queue_size[0]))
-                except Full:
-                    # in case the input job queue is full, keep clearing the result queue to make sure we don't deadlock
-                    process_result_queue()
-
-            process_result_queue()
-
-        while queue_size[0] > 0:  # wait for all outstanding jobs to finish
-            process_result_queue()
-        if real_len != len(self.corpus):
-            raise RuntimeError("input corpus size changed during fit_labels_parallel")
-
-        pool.terminate()
-        logging.info('finding fitted labels finished after {} mins'.format((time.time()-s_time)//60))
-
-        list_df = list(read_df(self.data_file))
-        if 'show_distr' in kwargs.keys() and kwargs['show_distr'] and 'distribution{}'.format(self.name) not in list_df:
-            append_column(self.data_file, 'distribution{}'.format(self.name), distributions)
-        if 'show_degree' in kwargs.keys() and kwargs['show_degree'] and 'degree{}'.format(self.name) not in list_df:
-            append_column(self.data_file, 'degree{}'.format(self.name), degrees)
-        if 'cluster{}'.format(self.name) not in list_df:
-            append_column(self.data_file, 'cluster{}'.format(self.name), labels)
-        logging.info('assigning fitted labels finished after {} mins'.format((time.time()-s_time)//60))
-        return labels, distributions, degrees
+                # def process_result_queue():
+                #     """Clear the result queue, merging all intermediate results"""
+                #     while not result_queue.empty():
+                #         lab, distr, degr, ch_f, ch_l = result_queue.get()
+                #         labels[ch_f:ch_l] = lab
+                #         distributions[ch_f:ch_l] = distr
+                #         degrees[ch_f:ch_l] = degr
+                #         queue_size[0] -= 1
+                #
+                # chunk_stream = grouper(self.corpus, chunksize)
+                # chunk_first, chunk_last = 0, 0
+                # for chunk_no, chunk in enumerate(chunk_stream):
+                #     chunk_first = chunk_last
+                #     chunk_last = chunk_first + len(chunk)
+                #
+                #     real_len += len(chunk)  # keep track of how many documents we've processed so far
+                #
+                #     # put the chunk into the workers' input job queue
+                #     chunk_put = False
+                #     while not chunk_put:
+                #         try:
+                #             # job_queue.put((chunk_no, chunk, self.model, chunk_first, chunk_last), block=False)
+                #             job_queue.put((chunk_no, chunk, self, chunk_first, chunk_last), block=False)
+                #             chunk_put = True
+                #             queue_size[0] += 1
+                #             logging.info('PROGRESS: dispatched chunk #{} = '
+                #                          'documents {}-{}, outstanding queue size {}'.format(
+                #                           chunk_no, chunk_first, chunk_last, queue_size[0]))
+                #         except Full:
+                #             # in case the input job queue is full, keep clearing the result queue to make sure we don't deadlock
+                #             process_result_queue()
+                #
+                #     process_result_queue()
+                #
+                # while queue_size[0] > 0:  # wait for all outstanding jobs to finish
+                #     process_result_queue()
+                # if real_len != len(self.corpus):
+                #     raise RuntimeError("input corpus size changed during fit_labels_parallel")
+                #
+                # pool.terminate()
+                # logging.info('finding fitted labels finished after {} mins'.format((time.time()-s_time)//60))
+                #
+                # list_df = list(read_df(self.data_file))
+                # if 'show_distr' in kwargs.keys() and kwargs['show_distr'] and 'distribution{}'.format(self.name) not in list_df:
+                #     append_column(self.data_file, 'distribution{}'.format(self.name), distributions)
+                # if 'show_degree' in kwargs.keys() and kwargs['show_degree'] and 'degree{}'.format(self.name) not in list_df:
+                #     append_column(self.data_file, 'degree{}'.format(self.name), degrees)
+                # if 'cluster{}'.format(self.name) not in list_df:
+                #     append_column(self.data_file, 'cluster{}'.format(self.name), labels)
+                # logging.info('assigning fitted labels finished after {} mins'.format((time.time()-s_time)//60))
+                # return labels, distributions, degrees
 
     def labels_exists(self, **kwargs):
         list_df = list(read_df(self.data_file))
@@ -356,80 +359,80 @@ class ClusterModel:
             labels = df['cluster{}'.format(self.name)].tolist()
             return labels, distributions, degrees
 
-    @staticmethod
-    def get_clusters_and_texts_parallel(input_file, text_field, cluster_field, use_bi_grams, degree_field=None, workers=2,
-                                        chunksize=1000):
-
-        grouper = chunk_df_serial  # choose according to a parameter which function to call when call grouper() !!!!
-
-        job_queue = Queue(2*workers)
-        result_queue = Queue()
-
-        pool = Pool(workers, worker_find_cluster_and_text, (job_queue, result_queue,))
-        queue_size = [0]  # integer can't be accessed in inner definition so list used
-        cluster_indices_total = {}
-        cluster_texts_total = {}
-        cluster_texts_with_degree_total = {}
-
-        def process_result_queue():
-            """Clear the result queue, merging all intermediate results"""
-            while not result_queue.empty():
-                res = result_queue.get()
-                for cluster_name, cluster_value in res[0].iteritems():
-                    cluster_indices_total.setdefault(cluster_name, [])
-                    cluster_indices_total[cluster_name] += cluster_value
-                for cluster_name, cluster_value in res[1].iteritems():
-                    cluster_texts_total.setdefault(cluster_name, u'')
-                    cluster_texts_total[cluster_name] += cluster_value
-                if degree_field:
-                    for cluster_name, cluster_value in res[2].iteritems():
-                        cluster_texts_with_degree_total.setdefault(cluster_name, u'')
-                        cluster_texts_with_degree_total[cluster_name] += cluster_value
-                queue_size[0] -= 1
-
-        read_columns = [text_field, cluster_field, u'instanceId']
-        read_columns += [degree_field] if degree_field else []
-        df = read_df(input_file, read_columns=read_columns)
-        chunk_stream = grouper(df, chunksize)
-        total_documents = len(df)
-        del df
-
-        # for chunk_no, chunk in enumerate(chunk_stream):
-        #     for idx, row in chunk.iterrows():
-        #         if row[cluster_field] == 498.:
-        #             print row
-
-        for chunk_no, chunk in enumerate(chunk_stream):
-            # put the chunk into the workers' input job queue
-            chunk_put = False
-            while not chunk_put:
-                try:
-                    job_queue.put((chunk_no, chunk, cluster_field, text_field, degree_field, use_bi_grams), block=False)
-                    chunk_put = True
-                    queue_size[0] += 1
-                    logging.info('PROGRESS: dispatched chunk {} = '
-                                 'documents up to {}, over {} documents, outstanding queue size {}'.
-                                 format(chunk_no, chunk_no * chunksize + len(chunk), total_documents, queue_size[0]))
-                except Full:
-                    # in case the input job queue is full, keep clearing the result queue to make sure we don't deadlock
-                    process_result_queue()
-
-            process_result_queue()
-
-        while queue_size[0] > 0:  # wait for all outstanding jobs to finish
-            process_result_queue()
-
-        pool.terminate()
-        # print 'all\n', cluster_indices_total[unicode(498.0)]
-
-        for key, value in cluster_indices_total.iteritems():
-            cluster_indices_total[key] = {'tickets': value}
-        for key, value in cluster_texts_total.iteritems():
-            cluster_texts_total[key] = re.sub(r' +', u' ', value)
-        if degree_field:
-            for key, value in cluster_texts_with_degree_total.iteritems():
-                cluster_texts_with_degree_total[key] = re.sub(r' +', u' ', value)
-        return cluster_indices_total, cluster_texts_total, cluster_texts_with_degree_total
+    # @staticmethod
+    # def get_clusters_and_texts_parallel(input_file, text_field, cluster_field, use_bi_grams, degree_field=None, workers=2,
+    #                                     chunksize=1000):
+    #
+    #     grouper = chunk_df_serial  # choose according to a parameter which function to call when call grouper() !!!!
+    #
+    #     job_queue = Queue(2*workers)
+    #     result_queue = Queue()
+    #
+    #     pool = Pool(workers, worker_find_cluster_and_text, (job_queue, result_queue,))
+    #     queue_size = [0]  # integer can't be accessed in inner definition so list used
+    #     cluster_indices_total = {}
+    #     cluster_texts_total = {}
+    #     cluster_texts_with_degree_total = {}
+    #
+    #     def process_result_queue():
+    #         """Clear the result queue, merging all intermediate results"""
+    #         while not result_queue.empty():
+    #             res = result_queue.get()
+    #             for cluster_name, cluster_value in res[0].iteritems():
+    #                 cluster_indices_total.setdefault(cluster_name, [])
+    #                 cluster_indices_total[cluster_name] += cluster_value
+    #             for cluster_name, cluster_value in res[1].iteritems():
+    #                 cluster_texts_total.setdefault(cluster_name, u'')
+    #                 cluster_texts_total[cluster_name] += cluster_value
+    #             if degree_field:
+    #                 for cluster_name, cluster_value in res[2].iteritems():
+    #                     cluster_texts_with_degree_total.setdefault(cluster_name, u'')
+    #                     cluster_texts_with_degree_total[cluster_name] += cluster_value
+    #             queue_size[0] -= 1
+    #
+    #     read_columns = [text_field, cluster_field, u'instanceId']
+    #     read_columns += [degree_field] if degree_field else []
+    #     df = read_df(input_file, read_columns=read_columns)
+    #     chunk_stream = grouper(df, chunksize)
+    #     total_documents = len(df)
+    #     del df
+    #
+    #     # for chunk_no, chunk in enumerate(chunk_stream):
+    #     #     for idx, row in chunk.iterrows():
+    #     #         if row[cluster_field] == 498.:
+    #     #             print row
+    #
+    #     for chunk_no, chunk in enumerate(chunk_stream):
+    #         # put the chunk into the workers' input job queue
+    #         chunk_put = False
+    #         while not chunk_put:
+    #             try:
+    #                 job_queue.put((chunk_no, chunk, cluster_field, text_field, degree_field, use_bi_grams), block=False)
+    #                 chunk_put = True
+    #                 queue_size[0] += 1
+    #                 logging.info('PROGRESS: dispatched chunk {} = '
+    #                              'documents up to {}, over {} documents, outstanding queue size {}'.
+    #                              format(chunk_no, chunk_no * chunksize + len(chunk), total_documents, queue_size[0]))
+    #             except Full:
+    #                 # in case the input job queue is full, keep clearing the result queue to make sure we don't deadlock
+    #                 process_result_queue()
+    #
+    #         process_result_queue()
+    #
+    #     while queue_size[0] > 0:  # wait for all outstanding jobs to finish
+    #         process_result_queue()
+    #
+    #     pool.terminate()
+    #     # print 'all\n', cluster_indices_total[unicode(498.0)]
+    #
+    #     for key, value in cluster_indices_total.iteritems():
+    #         cluster_indices_total[key] = {'tickets': value}
+    #     for key, value in cluster_texts_total.iteritems():
+    #         cluster_texts_total[key] = re.sub(r' +', u' ', value)
+    #     if degree_field:
+    #         for key, value in cluster_texts_with_degree_total.iteritems():
+    #             cluster_texts_with_degree_total[key] = re.sub(r' +', u' ', value)
+    #     return cluster_indices_total, cluster_texts_total, cluster_texts_with_degree_total
 
     @staticmethod
     def get_field_distribution_per_cluster(input_file, text_field, cluster_field, top_n=30):
@@ -437,28 +440,28 @@ class ClusterModel:
         df = read_df(input_file, read_columns=read_columns)
         field_per_cluster = {}
         for cluster, cluster_df in df.groupby(cluster_field):
-            field_per_cluster[unicode(cluster)] = Counter(
+            field_per_cluster[cluster] = Counter(
                 [re.sub(r' +', u' ', text, re.U)
                  for _, text in iter_tickets_on_field(text_field, data=cluster_df, as_list=False)]
             )
-            field_per_cluster[unicode(cluster)] = field_per_cluster[unicode(cluster)].most_common(top_n)
+            field_per_cluster[cluster] = field_per_cluster[cluster].most_common(top_n)
         return field_per_cluster
 
-    @staticmethod
-    def save_clusters_keys_json(clusters_keys_file, kea_obj, only_predictive=False, only_freq=False, stw=None,
-                                init_class=0, key_name='clusters_keys'):
-        logging.info('saving the {} ...'.format(key_name))
-        clusters_dict = {}
-        if os.path.isfile(clusters_keys_file):
-            clusters_dict = read_json(clusters_keys_file)
-        if '1' in clusters_dict.keys():
-            if isinstance(clusters_dict['1'], dict) and key_name in clusters_dict['1'].keys():  # cluster 1 should always exists
-                # if key_exists(clusters_dict, key_name):
-                logging.info('{} exists'.format(key_name))
-                return
-        clusters_keys = get_clusters_keys(kea_obj, stw, only_predictive, only_freq, init_class)
-        clusters_dict = append_to_json_clusters(key_name, dict_to_utf(clusters_keys), clusters_dict)
-        store_json(clusters_dict, clusters_keys_file)
+    # @staticmethod
+    # def save_clusters_keys_json(clusters_keys_file, kea_obj, only_predictive=False, only_freq=False, stw=None,
+    #                             init_class=0, key_name='clusters_keys'):
+    #     logging.info('saving the {} ...'.format(key_name))
+    #     clusters_dict = {}
+    #     if os.path.isfile(clusters_keys_file):
+    #         clusters_dict = read_json(clusters_keys_file)
+    #     if '1' in clusters_dict.keys():
+    #         if isinstance(clusters_dict['1'], dict) and key_name in clusters_dict['1'].keys():  # cluster 1 should always exists
+    #             # if key_exists(clusters_dict, key_name):
+    #             logging.info('{} exists'.format(key_name))
+    #             return
+    #     clusters_keys = get_clusters_keys(kea_obj, stw, only_predictive, only_freq, init_class)
+    #     clusters_dict = append_to_json_clusters(key_name, dict_to_utf(clusters_keys), clusters_dict)
+    #     store_json(clusters_dict, clusters_keys_file)
 
     @staticmethod
     def save_counts(clusters_file):

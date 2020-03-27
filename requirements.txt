@@ -1,5 +1,8 @@
-gensim
+nomkl
+numpy
 pandas
+gensim
 tldextract
 wordcloud
 matplotlib
+scikit-learn

@@ -14,3 +14,9 @@ def get_logger(name, level, folder=None, filename=None):
         logger.addHandler(handler)
     return logger
 
+
+def log_info(message, logger=None):
+    if logger:
+        logger.info(message)
+    else:
+        print(message)
