@@ -1,9 +1,12 @@
 import math
+import time
 
 import numpy as np
 from scipy.sparse import lil_matrix
 from sklearn.metrics import silhouette_score
 from sklearn.metrics.pairwise import pairwise_distances
+
+from src.utils.logger_utils import log_info
 
 
 class ClusterEvaluator(object):
@@ -12,7 +15,7 @@ class ClusterEvaluator(object):
         pass
 
     @staticmethod
-    def silhouette_coefficient(input_data, labels):
+    def silhouette_coefficient(input_data, labels, logger=None):
         """
         Uses the cosine similarity for fast evaluation (a slower option is jaccard)
 
@@ -20,16 +23,27 @@ class ClusterEvaluator(object):
         :param labels:
         :return:
         """
-        return silhouette_score(input_data, labels, metric='cosine', random_state=40)
+        s_time = time.time()
+        log_info('Evaluating the silhouette coefficient on {} samples...'.format(len(labels)), logger)
+
+        res = silhouette_score(input_data, labels, metric='cosine', random_state=40)
+
+        log_info('Calculations finished after {} seconds. '.format(time.time() - s_time), logger)
+        log_info('Silhouette coefficient = {}'.format(res))
+
+        return res
 
     @staticmethod
-    def topics_cohesion_sparse(sparse_corpus, vocabulary_ids, words_ids_per_topic):
+    def topics_cohesion_sparse(sparse_corpus, vocabulary_ids, words_ids_per_topic, logger=None):
         """
         :param sparse_corpus: sparse matrix of shape (docsL, wordsL)
         :param words_ids_per_topic: dictionary of format {topic1: [w1, w2,..], topic2: []..}.
         :param vocabulary_ids: list of ids of words with the order appeared in corpus
         :return:
         """
+
+        s_time = time.time()
+        log_info('Calculating cohesion per topic...', logger)
 
         # Get a list with all words_ids appearing in all topics
         union_topics_words_ids_list = list(set().union(*words_ids_per_topic.values()))
@@ -45,6 +59,10 @@ class ClusterEvaluator(object):
                 cohesion_per_topic[topic] = _topic_cohesion_sparse(_topic_npmi_matrix_sparse(cm_sparse,
                                                                                              union_topics_words_ids_list,
                                                                                              words_ids))
+
+        log_info('Finished calculations after {} seconds.'.format(time.time() - s_time), logger)
+        log_info('Cohesion per topic = {}'.format(cohesion_per_topic))
+
         return cohesion_per_topic
 
 

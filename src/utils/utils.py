@@ -1,8 +1,9 @@
 from __future__ import unicode_literals
 
-import os
-import math
 import logging
+import math
+import os
+
 import numpy as np
 
 
@@ -41,13 +42,6 @@ def iter_tickets_with_degree(field, degree_field, datafile=None, data=None, use_
             yield idx, u' '.join([item for sublist in text for item in sublist])
         else:
             yield idx, u' '.join(bi_grams_on_sentences_list(text))
-
-
-def append_column(df_file, column_name, column_data):
-    """no handling for csv params so better give pickle ! """
-    df = read_df(df_file)
-    df[column_name] = column_data
-    store_df(df, df_file)
 
 
 def rename_column(df_file, in_col, out_col):

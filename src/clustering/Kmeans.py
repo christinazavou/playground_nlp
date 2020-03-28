@@ -1,20 +1,19 @@
+import logging
 import os
 import time
-import logging
+
+import numpy as np
 import pandas as pd
 from scipy import sparse
-import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.decomposition import TruncatedSVD
-from sklearn.preprocessing import Normalizer
-from sklearn.pipeline import make_pipeline
-from src.utils.pandas_utils import iter_tickets_on_field
-from sklearn.preprocessing import StandardScaler
-from src.preprocessing.Doc2Vec import CorpusToDoc2Vec
 from sklearn.feature_extraction.text import TfidfVectorizer
-from .ClusteringAlgorithms import ClusterModel
-from src.utils.io_utils import read_df
+from sklearn.preprocessing import StandardScaler
+
+from src.preprocessing.Doc2Vec import CorpusToDoc2Vec
 from src.utils.logger_utils import get_logger
+from src.utils.pandas_utils import iter_tickets_on_field
+from .ClusteringAlgorithms import ClusterModel
 
 
 class Kmeans_Model(ClusterModel):
@@ -26,13 +25,13 @@ class Kmeans_Model(ClusterModel):
         super(Kmeans_Model, self).__init__(data_file, field, model_file, stw_file, name, num_clusters, use_bi_grams)
         self.max_features = max_features
 
-        logger = manage_logger(__name__, 'INFO', os.path.dirname(os.path.realpath(model_file)), 'train.log')
+        logger = get_logger(__name__, 'INFO', os.path.dirname(os.path.realpath(model_file)), 'train.log')
 
         if not os.path.isfile(model_file):
 
             if vec_size and window:
-                doc2vec = CorpusToDoc2Vec(data_file, field, model_file.replace('.p', 'd2v.p'), vec_size=vec_size,
-                                          window=window)
+                doc2vec = CorpusToDoc2Vec(data_file, field, model_file.replace('.p', 'd2v.p'),
+                                          vector_size=vec_size, window=window)
                 self.corpus = doc2vec.get_vectors_as_np()
             else:
                 doc_stream = (text for _, text in iter_tickets_on_field(field, datafile=data_file, use_bi_grams=use_bi_grams, as_list=False))

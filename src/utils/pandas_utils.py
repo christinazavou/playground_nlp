@@ -1,6 +1,6 @@
+from src.utils.io_utils import read_df, store_df
 from src.utils.text_utils import add_uni_grams_and_bi_grams_from_tokens
 from src.utils.text_utils import get_variable_from_string
-from src.utils.io_utils import read_df
 
 
 def chunk_dataframe_serial(df, chunk_size):
@@ -38,3 +38,9 @@ def get_preprocessed_text(sentences_list, use_bi_grams=False, as_list=True):
         return u' '.join(uni_grams_and_bi_grams)
     else:
         return uni_grams_and_bi_grams
+
+
+def append_column(df_file, column_name, column_data):
+    df = read_df(df_file)
+    df[column_name] = column_data
+    store_df(df, df_file)

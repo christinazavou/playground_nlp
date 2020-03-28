@@ -17,8 +17,14 @@ def chunk_serial(iterable, chunk_size):
 
 
 def get_random_sample(x, y=None, sample_size=5000):
+    """
+    :param x: shape [N, ?, ?, ...]
+    :param y: shape [N, ?, ?, ...]
+    :param sample_size: int
+    :return: shape [sample_size, ?, ?, ...], shape [sample_size, ?, ?, ...]
+    """
     sample_indices = np.random.randint(x.shape[0], size=sample_size)
-    x = x[sample_indices, :]
+    x = x[sample_indices]
     if y is not None:
         y = y[sample_indices]
     return x, y
