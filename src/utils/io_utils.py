@@ -1,38 +1,65 @@
 
 # -*- coding: utf-8 -*-
 
-import json
-import pickle
 import gzip
-import pandas as pd
+import json
 import os
+import pickle
+
+import pandas as pd
 
 
-def load_zip_df(filename, columns=None):
-    if '.p' in filename:
-        f = gzip.GzipFile(filename, 'rb')
+def _load_pickled_zipped_df(filename):
+    if '.p' not in filename or '.zip' not in filename:
+        raise NotImplementedError('non accepted pickled zipped filename {}'.format(filename))
 
-        # for compatibility with Python2 and Python3:
-        u = pickle._Unpickler(f)
-        u.encoding = 'latin1'
-        df = u.load()
+    f = gzip.GzipFile(filename, 'rb')
 
-        assert isinstance(df, type(pd.DataFrame())), 'object read in {} is not a pandas Dataframe'.format(filename)
-        f.close()
-        if columns:
-            return df[columns]
-        return df
-    else:
+    # for compatibility with Python2 and Python3:
+    u = pickle._Unpickler(f)
+    u.encoding = 'latin1'
+    df = u.load()
+
+    assert isinstance(df, type(pd.DataFrame())), 'object read in {} is not a pandas Dataframe'.format(filename)
+    f.close()
+    return df
+
+
+def _store_pickled_zipped_df(df, filename):
+    if '.p' not in filename or '.zip' not in filename:
         raise Exception('non accepted zip file {}'.format(filename))
-
-
-def store_zip_df(df, filename):
-    if '.p' in filename and '.zip' in filename:
+    else:
         f = gzip.GzipFile(filename, 'wb')
         pickle.dump(df, f)
         f.close()
+
+
+def read_df(df_file, chunk_size=None, read_columns=None):
+    if '.p' in df_file:
+        if '.zip' in df_file:
+            df = _load_pickled_zipped_df(df_file)
+        else:
+            df = pd.read_pickle(df_file)
+        if read_columns:
+            return df[read_columns]
+        else:
+            return df
+    if '.csv' in df_file:
+        return pd.read_csv(df_file, encoding='utf8', index_col=0, usecols=read_columns, chunksize=chunk_size)
     else:
-        raise Exception('non accepted zip file {}'.format(filename))
+        raise NotImplementedError('Can\' read pandas DataFrame from filename {}'.format(df_file))
+
+
+def store_df(df, df_file, index=True, header=True, mode='w'):
+    if '.p' in df_file:
+        if '.zip' in df_file:
+            _store_pickled_zipped_df(df, df_file)
+        else:
+            df.to_pickle(df_file)
+    elif '.csv' in df_file:
+        df.to_csv(df_file, encoding='utf8', header=header, index=index, mode=mode)
+    else:
+        raise NotImplementedError('Can\'t store pandas DataFrame for filename {}'.format(df_file))
 
 
 def load_zip_json(filename):
@@ -51,67 +78,6 @@ def store_zip_json(dictionary, filename):
         raise Exception('non accepted zip file {}'.format(filename))
 
 
-def store_pickle(obj, filename, protocol=None):
-    if '.zip' in filename:
-        f = gzip.GzipFile(filename, 'wb')
-        if protocol:
-            pickle.dump(obj, f, protocol)
-        else:
-            pickle.dump(obj, f)
-        f.close()
-    else:
-        if protocol:
-            pickle.dump(obj, open(filename, 'wb'), protocol)
-        else:
-            pickle.dump(obj, open(filename, 'wb'))
-
-
-def load_pickle(filename):
-    """
-    :param filename:
-    :return:
-    :raises FileNotFoundError
-    """
-    if '.zip' in filename:
-        f = gzip.GzipFile(filename, 'rb')
-        obj = pickle.load(f)
-    else:
-        obj = pickle.load(open(filename, 'rb'))
-    return obj
-
-
-def read_df(df_file, chunk_size=None, read_columns=None):
-    if '.csv' in df_file:
-        if chunk_size:
-            return pd.read_csv(df_file, encoding='utf8', index_col=0, chunksize=chunk_size)
-        else:
-            if read_columns:
-                return pd.read_csv(df_file, encoding='utf8', index_col=0, usecols=read_columns)
-            else:
-                return pd.read_csv(df_file, encoding='utf8', index_col=0)
-    elif '.p' in df_file:
-        if 'zip' in df_file:
-            return load_zip_df(df_file, read_columns)
-        if read_columns:
-            return pd.read_pickle(df_file)[read_columns]
-        else:
-            return pd.read_pickle(df_file)
-    else:
-        raise Exception(' unknown pandas file {}'.format(df_file))
-
-
-def store_df(df, df_file, index=True, header=True, mode='w'):
-    if '.csv' in df_file:
-        df.to_csv(df_file, encoding='utf8', header=header, index=index, mode=mode)
-    elif '.p' in df_file:
-        if 'zip' in df_file:
-            store_zip_df(df, df_file)
-        else:
-            df.to_pickle(df_file)
-    else:
-        raise Exception(' unknown pandas file {}'.format(df_file))
-
-
 def read_json(json_file):
     if 'zip' in json_file:
         return load_zip_json(json_file)
@@ -125,11 +91,30 @@ def store_json(data, json_file):
         json.dump(data, open(json_file, 'w'), encoding='utf8', indent=2)
 
 
+def store_pickle(obj, filename):
+    if '.zip' in filename:
+        f = gzip.GzipFile(filename, 'wb')
+        pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
+        f.close()
+    else:
+        assert '.p' in filename
+        pickle.dump(obj, open(filename, 'wb'), pickle.HIGHEST_PROTOCOL)
+
+
+def load_pickle(filename):
+    """
+    :param filename:
+    :return:
+    :raises FileNotFoundError
+    """
+    if '.zip' in filename:
+        f = gzip.GzipFile(filename, 'rb')
+        obj = pickle.load(f)
+    else:
+        assert '.p' in filename
+        obj = pickle.load(open(filename, 'rb'))
+    return obj
+
+
 def file_exists(filename):
     return os.path.isfile(filename)
-
-
-if __name__ == '__main__':
-    df = read_df("/media/christina/Elements/Thesis_stuff/nlp-keywords-cupenya/data/LibertyGlobal/DBSCAN/config1/data_frame_selectedpreprocessed.p.zip")
-    res = df["textpreprocessed"].iloc[0:10]
-    res.to_csv("exampleData.csv", header=True)

@@ -77,6 +77,7 @@ def worker_find_cluster_and_text(input_queue, result_queue):
 
 
 class ClusterParameters:
+
     def __init__(self, num_clusters=30, use_bi_grams=False, max_df=0.95, min_df=5, max_features=None):
         self.num_clusters = num_clusters
         self.use_bi_grams = use_bi_grams
@@ -86,6 +87,7 @@ class ClusterParameters:
 
 
 class ClusterModel:
+
     __metaclass__ = ABCMeta
 
     def __init__(self, datafile, field, model_file, stw_file, name, cluster_parameters=None):
@@ -127,7 +129,7 @@ class ClusterModel:
             LOGGER.info('Length of corpus {}'.format(len(self.corpus)))
 
     def save(self):
-        store_pickle(self.__dict__, self.model_file, 2)
+        store_pickle(self.__dict__, self.model_file)
 
     def store_clusters(self, clusters_file, clusters_text_file, cluster_field=None, degree_field=None, workers=2):
         if os.path.isfile(clusters_file) and os.path.isfile(clusters_text_file):
@@ -148,7 +150,7 @@ class ClusterModel:
             return self.scores[metric]
 
         if metric == 'silhouette':
-            labels = np.array(self.save_labels_parallel(**kwargs)[0])
+            labels = np.array(self.fit_labels_parallel(**kwargs)[0])
             corpus = self.get_corpus(True)
 
             samples = min(2000, int(corpus.shape[0] * 0.5))
@@ -185,7 +187,7 @@ class ClusterModel:
         if not os.path.isfile(self.model_file.replace('.p', 't-sne.png')):
             labels, _, _ = self.labels_exists(**kwargs)
             if not labels:
-                labels, _, _ = self.save_labels_parallel()
+                labels, _, _ = self.fit_labels_parallel()
 
             for verbose, early_ex, n_iter, metric, init, random_st in zip([1, 1, 1],
                                                                           [4, 6, 8],
@@ -222,7 +224,7 @@ class ClusterModel:
             labels = df['cluster{}'.format(self.name)].tolist()
             return labels, distributions, degrees
 
-    def save_labels_parallel(self, workers=2, chunksize=10000, **kwargs):
+    def fit_labels_parallel(self, workers=2, chunksize=10000, **kwargs):
         """
         :param workers:
         :param chunksize:

@@ -1,6 +1,9 @@
 nomkl
 numpy
 pandas
+boto
+requests
+pillow
 gensim
 tldextract
 wordcloud
