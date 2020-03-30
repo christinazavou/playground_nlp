@@ -90,19 +90,37 @@ class ClusterModel:
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, datafile, field, model_file, stw_file, name, cluster_parameters=None):
-        LOGGER.info('Building/loading {} model...'.format(name))
+    def __init__(self, datafile, field, model_dir, stw_file, model_name, cluster_parameters=None):
+        LOGGER.info('Building/loading {} model...'.format(model_name))
 
         self.data_file = datafile
         self.field = field
-        self.model_file = model_file
+
+        if not os.path.exists(model_dir):
+            os.makedirs(model_dir)
+        self.model_dir = model_dir
         self.stw = StemToWord(stw_file=stw_file)
-        self.name = name
+        self.model_name = model_name
+
+        self.model_file = os.path.join(self.model_dir, self.model_name + ".pkl.gzip")
+
         self.model = None
         self.corpus = None
+
         self.cluster_parameters = cluster_parameters if cluster_parameters else ClusterParameters()
-        self.logger = get_logger(__name__, 'INFO', os.path.dirname(os.path.realpath(self.model_file)), 'train.log')
+
         self.scores = {}  # dictionary that keeps the evaluation of the cluster
+
+        # comment this if you use python < 3.7
+        self.logger = get_logger(__name__, 'INFO', self.model_dir, self.model_name + ".log")
+
+    def get_logger(self):
+        """
+        NOTE: since python 3.7 loggers can be pickled. before they couldn't
+        """
+        # return get_logger(__name__, 'INFO', os.path.dirname(os.path.realpath(self.model_file)), 'train.log')
+        # comment this if you use python < 3.7 and use the line above
+        return self.logger
 
     @abstractmethod
     def assign_to_cluster(self, doc, **kwargs):
@@ -123,18 +141,18 @@ class ClusterModel:
     def load(self):
         tmp_dict = read_pickle(self.model_file)
         self.__dict__.update(tmp_dict)
-        try:
-            LOGGER.info('Length of corpus {}'.format(self.corpus.shape[0]))
-        except:
-            LOGGER.info('Length of corpus {}'.format(len(self.corpus)))
+        LOGGER.info('Length of corpus {}'.format(len(self.corpus)))
 
     def save(self):
+        """
+        NOTE: since python 3.7 loggers can be pickled. before they couldn't
+        """
         write_pickle(self.__dict__, self.model_file)
 
     def store_clusters(self, clusters_file, clusters_text_file, cluster_field=None, degree_field=None, workers=2):
         if os.path.isfile(clusters_file) and os.path.isfile(clusters_text_file):
             return  # do not overwrite
-        cluster_field = cluster_field if cluster_field else 'cluster{}'.format(self.name)
+        cluster_field = cluster_field if cluster_field else 'cluster{}'.format(self.model_name)
         cluster_indices, cluster_texts, cluster_texts_with_degree = self.create_clusters_parallel(
             self.data_file, self.field, cluster_field, self.cluster_parameters.use_bi_grams, degree_field=degree_field,
             workers=workers, chunksize=1000
@@ -156,7 +174,7 @@ class ClusterModel:
             samples = min(2000, int(corpus.shape[0] * 0.5))
             corpus, labels = get_random_sample(corpus, labels, samples)
 
-            self.scores[metric] = ClusterEvaluator().silhouette_coefficient(corpus, labels, self.logger)
+            self.scores[metric] = ClusterEvaluator().silhouette_coefficient(corpus, labels, self.get_logger())
 
         elif metric == 'cohesion':
             # todo: add assertion that model is LDA
@@ -164,7 +182,7 @@ class ClusterModel:
             self.scores[metric] = ClusterEvaluator().topics_cohesion_sparse(self.get_sparse_corpus(),
                                                                             self.get_vocabulary_ids(),
                                                                             words_ids_per_class,
-                                                                            self.logger)
+                                                                            self.get_logger())
         self.save()
         return self.scores[metric]
 
@@ -184,7 +202,7 @@ class ClusterModel:
 
     def visualize_t_sne(self, **kwargs):
 
-        if not os.path.isfile(self.model_file.replace('.p', 't-sne.png')):
+        if not os.path.isfile(self.model_file.replace('.pkl', 't-sne.png')):
             labels, _, _ = self.labels_exists(**kwargs)
             if not labels:
                 labels, _, _ = self.fit_labels_parallel()
@@ -196,8 +214,8 @@ class ClusterModel:
                                                                           ['pca', 'random', 'pca'],
                                                                           [200, 200, 200]):
                 run_tsne_projection(self.get_corpus(True),
-                                    self.model_file.replace('.p', 't-sne.png'),
-                                    self.logger,
+                                    self.model_file.replace('.pkl', 't-sne.png'),
+                                    self.get_logger(),
                                     np.array(labels),
                                     verbose=verbose,
                                     early_exaggeration=early_ex,
@@ -208,20 +226,22 @@ class ClusterModel:
 
     def labels_exists(self, **kwargs):
         list_df = list(read_df(self.data_file))
-        if 'cluster{}'.format(self.name) not in list_df or (
-            'show_degree' in kwargs.keys() and kwargs['show_degree'] and 'degree{}'.format(self.name) not in list_df
+        if 'cluster{}'.format(self.model_name) not in list_df or (
+                            'show_degree' in kwargs.keys() and kwargs['show_degree'] and 'degree{}'.format(
+                    self.model_name) not in list_df
         ) or (
-            'show_distr' in kwargs.keys() and kwargs['show_distr'] and 'distribution{}'.format(self.name) not in list_df
+                            'show_distr' in kwargs.keys() and kwargs['show_distr'] and 'distribution{}'.format(
+                    self.model_name) not in list_df
         ):
             return None, None, None
         else:
             df = read_df(self.data_file)
             labels, distributions, degrees = [], [], []
-            if 'distribution{}'.format(self.name) in list(df):
-                distributions = df['distribution{}'.format(self.name)].tolist()
-            if 'degree{}'.format(self.name) in list(df):
-                degrees = df['degree{}'.format(self.name)].tolist()
-            labels = df['cluster{}'.format(self.name)].tolist()
+            if 'distribution{}'.format(self.model_name) in list(df):
+                distributions = df['distribution{}'.format(self.model_name)].tolist()
+            if 'degree{}'.format(self.model_name) in list(df):
+                degrees = df['degree{}'.format(self.model_name)].tolist()
+            labels = df['cluster{}'.format(self.model_name)].tolist()
             return labels, distributions, degrees
 
     def fit_labels_parallel(self, workers=2, chunksize=10000, **kwargs):
@@ -291,12 +311,14 @@ class ClusterModel:
         logging.info('finding fitted labels finished after {} mins'.format((time.time() - s_time) // 60))
 
         list_df = list(read_df(self.data_file))
-        if 'show_distr' in kwargs.keys() and kwargs['show_distr'] and 'distribution{}'.format(self.name) not in list_df:
-            append_column(self.data_file, 'distribution{}'.format(self.name), distributions)
-        if 'show_degree' in kwargs.keys() and kwargs['show_degree'] and 'degree{}'.format(self.name) not in list_df:
-            append_column(self.data_file, 'degree{}'.format(self.name), degrees)
-        if 'cluster{}'.format(self.name) not in list_df:
-            append_column(self.data_file, 'cluster{}'.format(self.name), labels)
+        if 'show_distr' in kwargs.keys() and kwargs['show_distr'] and 'distribution{}'.format(
+                self.model_name) not in list_df:
+            append_column(self.data_file, 'distribution{}'.format(self.model_name), distributions)
+        if 'show_degree' in kwargs.keys() and kwargs['show_degree'] and 'degree{}'.format(
+                self.model_name) not in list_df:
+            append_column(self.data_file, 'degree{}'.format(self.model_name), degrees)
+        if 'cluster{}'.format(self.model_name) not in list_df:
+            append_column(self.data_file, 'cluster{}'.format(self.model_name), labels)
         logging.info('assigning fitted labels finished after {} mins'.format((time.time() - s_time) // 60))
         return labels, distributions, degrees
 

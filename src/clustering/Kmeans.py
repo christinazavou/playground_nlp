@@ -1,3 +1,4 @@
+import logging
 import os
 import time
 
@@ -11,7 +12,10 @@ from sklearn.preprocessing import StandardScaler
 
 from src.clustering.ClusteringAlgorithms import ClusterModel, ClusterParameters
 from src.preprocessing.Doc2Vec import CorpusToDoc2Vec
+from src.utils.logger_utils import get_logger
 from src.utils.pandas_utils import iter_tickets_on_field
+
+LOGGER = get_logger(__name__, logging.INFO)
 
 
 class KMeansClusterParameters(object):
@@ -28,7 +32,7 @@ class KMeansModel(ClusterModel):
         if self.kmeans_cluster_parameters.vector_size and self.kmeans_cluster_parameters.window:
             doc2vec = CorpusToDoc2Vec(self.data_file,
                                       self.field,
-                                      self.model_file.replace('.p', 'd2v.p'),
+                                      self.model_file.replace('.pkl', '_D2V.pkl'),
                                       vector_size=self.kmeans_cluster_parameters.vector_size,
                                       window=self.kmeans_cluster_parameters.window)
             self.corpus = doc2vec.get_vectors_as_np()
@@ -56,30 +60,33 @@ class KMeansModel(ClusterModel):
         self.corpus = self.corpus.astype(np.float64)
         if isinstance(self.corpus, np.ndarray):
             self.corpus = sparse.csr_matrix(self.corpus)
-        self.logger.info('Corpus shape: {}'.format(self.corpus.shape))
+        self.get_logger().info('Corpus shape: {}'.format(self.corpus.shape))
+        LOGGER.info('Corpus shape: {}'.format(self.corpus.shape))
 
     def _fit_clusters(self):
         s_time = time.time()
         self.model = KMeans(n_clusters=self.cluster_parameters.num_clusters, random_state=100)
         cluster_labels = self.model.fit_predict(self.corpus)
-        self.logger.info(
+        self.get_logger().info(
             'KMeans on {} samples finished after {} seconds'.format(self.corpus.shape, time.time() - s_time))
+        LOGGER.info('KMeans on {} samples finished after {} seconds'.format(self.corpus.shape, time.time() - s_time))
         return cluster_labels
 
-    def __init__(self, data_file, field, model_file, stw_file, name,
+    def __init__(self, data_file, field, model_dir, stw_file, model_name,
                  cluster_parameters=ClusterParameters(), kmeans_cluster_parameters=KMeansClusterParameters()):
 
         self.cluster_parameters = cluster_parameters
         self.kmeans_cluster_parameters = kmeans_cluster_parameters
-        super(KMeansModel, self).__init__(data_file, field, model_file, stw_file, name, cluster_parameters)
+        super(KMeansModel, self).__init__(data_file, field, model_dir, stw_file, model_name, cluster_parameters)
 
-        if not os.path.isfile(model_file):
+        if not os.path.isfile(self.model_file):
             self._create_corpus()
             cluster_labels = self._fit_clusters()
 
             cluster_labels = pd.DataFrame({'Label': cluster_labels})
             for cluster, docs in cluster_labels.groupby('Label'):
-                print('cluster {} has {} documents'.format(cluster, docs.shape[0]))
+                self.get_logger().info('Cluster {} has {} documents'.format(cluster, docs.shape[0]))
+                LOGGER.info('Cluster {} has {} documents'.format(cluster, docs.shape[0]))
 
             self.save()
         else:
@@ -103,12 +110,12 @@ if __name__ == '__main__':
     kmeans_params = KMeansClusterParameters(vector_size=100, window=5, std_scale=True, svd_n=None, pca_n=None)
 
     m = KMeansModel(
-        '../.resources/df_preprocessed_automatic.p.zip',
+        '../.resources/example_preprocessed.csv.gzip',
         u'textpreprocessed',
-        '../.resources/DBSCAN10_mod_text.p.zip',
-        '../.resources/stw_text.p.zip',
-        'DBSCAN10_mod_',
+        '../.resources/ALLKMEANS/C1',
+        '../.resources/example_stw_text.p.gzip',
+        'KMeansCluster',
         cluster_params,
         kmeans_params)
 
-# todo: check that log is appended on previous log file
+    # todo: check that log is appended on previous log file

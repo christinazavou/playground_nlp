@@ -5,16 +5,15 @@
 import json
 from flask import Flask
 from multiprocessing import freeze_support
+
 from src.preprocessing.Doc2Vec import CorpusToDoc2Vec
 from src.utils.pandas_utils import read_df
-from src.utils.text_utils import get_variable_from_string
-
 
 app = Flask(__name__)
 
 _df_file = '../..resources/exampleData.csv'
 _field_text = 'textpreprocessed'
-_model_file = '../..resources/exampleModel.p'
+_model_file = '../..resources/example_D2V.pkl'
 
 model = CorpusToDoc2Vec(_df_file,
                         _field_text,

@@ -5,9 +5,8 @@ import gzip
 import json
 import logging
 import os
-import pickle
-
 import pandas as pd
+import pickle
 
 from src.utils.logger_utils import get_logger
 
@@ -83,8 +82,9 @@ def read_pickle(filename):
         f = gzip.GzipFile(filename, 'rb')
         obj = pickle.load(f)
     else:
-        assert '.p' in filename
-        obj = pickle.load(open(filename, 'rb'))
+        assert '.pkl' in filename
+        with open(filename, 'rb') as input_data:
+            obj = pickle.load(input_data)
     return obj
 
 
@@ -94,8 +94,9 @@ def write_pickle(obj, filename):
         pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
         f.close()
     else:
-        assert '.p' in filename
-        pickle.dump(obj, open(filename, 'wb'), pickle.HIGHEST_PROTOCOL)
+        assert '.pkl' in filename
+        with open(filename, 'wb') as output:
+            pickle.dump(obj, output, pickle.HIGHEST_PROTOCOL)
 
 
 def file_exists(filename):

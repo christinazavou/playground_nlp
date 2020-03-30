@@ -39,10 +39,10 @@ class TestIOUtilsMethods(unittest.TestCase):
     def test_read_write_pickle(self):
         from src.utils.io_utils import read_pickle, write_pickle
 
-        with self.assertRaises(FileNotFoundError):
+        with self.assertRaises(AssertionError):
             read_pickle("../.resources/exampleModel.p1")
 
-        example_model = read_pickle("../.resources/exampleModel.p")
+        example_model = read_pickle("../.resources/example_D2V.pkl")
         from gensim.models.doc2vec import Doc2Vec
         self.assertTrue(isinstance(example_model, Doc2Vec))
 

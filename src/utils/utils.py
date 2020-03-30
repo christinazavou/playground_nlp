@@ -1,10 +1,8 @@
-from __future__ import unicode_literals
+import math
 
 import logging
-import math
-import os
-
 import numpy as np
+import os
 
 
 def to_remove_indices(df, condition_dict, logger=None):
@@ -56,13 +54,6 @@ def remove_column(df_file, column):
     if column in list(df):
         del df[column]
         store_df(df, df_file)
-
-
-def pickle_to_csv(pickle_file):  # not zipped support !!!
-    pickle_file = pickle_file.replace('.p', '.csv')
-    if '.zip' in pickle_file:
-        pickle_file = pickle_file.replace('.zip', '')
-    return pickle_file
 
 
 def columns_in_df(df_file, columns):

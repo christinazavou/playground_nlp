@@ -7,7 +7,7 @@ class TestDoc2VecUtilsMethods(unittest.TestCase):
         from src.preprocessing.Doc2Vec import CorpusToDoc2Vec
         corpus_to_doc_2_vec = CorpusToDoc2Vec("../.resources/exampleData.csv",
                                               "textpreprocessed",
-                                              "../.resources/exampleModel.p")
+                                              "../.resources/example_D2V.pkl")
 
         vectors_matrix = corpus_to_doc_2_vec.get_vectors_as_np()
         self.assertEqual((10, 400), vectors_matrix.shape)

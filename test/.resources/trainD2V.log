@@ -347,3 +347,9 @@
 2020-03-14 19:24:30,156 : MainThread : INFO : doc2vec shape: ()
 2020-03-14 19:24:30,156 : MainThread : INFO : precomputing L2-norms of doc weight vectors
 2020-03-14 20:29:05,756 : MainThread : INFO : doc2vec shape: ()
+2020-03-30 18:45:35,585 : MainThread : INFO : Input initialized. Start training doc2vec.
+2020-03-30 18:45:35,737 : MainThread : INFO : Finished doc2vec after 0.0 minutes.
+2020-03-30 18:45:35,737 : MainThread : INFO : doc2vec shape: ()
+2020-03-30 19:02:49,675 : MainThread : INFO : doc2vec shape: ()
+2020-03-30 19:03:06,707 : MainThread : INFO : doc2vec shape: ()
+2020-03-30 19:22:19,735 : MainThread : INFO : doc2vec shape: ()

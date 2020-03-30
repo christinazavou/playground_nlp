@@ -1,7 +1,7 @@
 import unittest
+from nltk.stem.snowball import SnowballStemmer
 
 from src.preprocessing.StemToWord import StemToWord, StemToWordFileMissingError
-from nltk.stem.snowball import SnowballStemmer
 
 
 class TestStemToWord(unittest.TestCase):
@@ -19,7 +19,7 @@ class TestStemToWord(unittest.TestCase):
             stem_to_word_obj.save()
 
     def test_save_ok(self):
-        stem_to_word_obj = StemToWord("../.resources/ExampleSTW.p")
+        stem_to_word_obj = StemToWord("../.resources/ExampleSTW.pkl")
         try:
             stem_to_word_obj.save()
         except Exception as e:

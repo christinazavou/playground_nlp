@@ -1,5 +1,5 @@
-import unittest
 import pandas as pd
+import unittest
 
 
 class TestPandasUtilsMethods(unittest.TestCase):
@@ -40,11 +40,13 @@ class TestPandasUtilsMethods(unittest.TestCase):
 
     def test_iter_tickets_on_field(self):
         from src.utils.pandas_utils import iter_tickets_on_field
-        generator = iter_tickets_on_field("textpreprocessed", input_file="../exampleData.csv", use_bi_grams=False, as_list=False)
+        generator = iter_tickets_on_field("textpreprocessed", input_file="../.resources/exampleData.csv",
+                                          use_bi_grams=False, as_list=False)
         idx, ticket = next(generator)
         self.assertTrue(isinstance(ticket, str))
 
-        generator = iter_tickets_on_field("textpreprocessed", input_file="../exampleData.csv", use_bi_grams=False, as_list=True)
+        generator = iter_tickets_on_field("textpreprocessed", input_file="../.resources/exampleData.csv",
+                                          use_bi_grams=False, as_list=True)
         idx, ticket = next(generator)
         self.assertTrue(isinstance(ticket, list))
 
