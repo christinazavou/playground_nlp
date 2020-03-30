@@ -110,3 +110,5 @@ if __name__ == '__main__':
         'DBSCAN10_mod_',
         cluster_params,
         kmeans_params)
+
+# todo: check that log is appended on previous log file

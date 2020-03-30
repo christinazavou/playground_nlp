@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 from collections import defaultdict
-from src.utils.io_utils import store_pickle, load_pickle
+from src.utils.io_utils import write_pickle, read_pickle
 from src.utils.logger_utils import get_logger
 
 logging.root.level = logging.INFO
@@ -39,7 +39,7 @@ class StemToWord:
         if stw_file:
             self.filename = stw_file
             try:
-                copy_instance = load_pickle(stw_file)
+                copy_instance = read_pickle(stw_file)
                 self.words_by_stem_map = copy_instance.words_by_stem_map
             except FileNotFoundError:
                 pass
@@ -55,7 +55,7 @@ class StemToWord:
 
     def save(self):
         if self.filename:
-            store_pickle(self, self.filename)
+            write_pickle(self, self.filename)
         else:
             raise StemToWordFileMissingError("if self.filename", "filename is not set. Please provide that")
 

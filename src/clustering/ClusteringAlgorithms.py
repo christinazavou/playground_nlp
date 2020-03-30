@@ -14,7 +14,7 @@ import numpy as np
 from src.clustering.evaluation import ClusterEvaluator
 from src.preprocessing.StemToWord import StemToWord
 from src.utils.generic_utils import chunk_serial, get_random_sample
-from src.utils.io_utils import load_pickle, store_pickle, store_json, read_json, read_df
+from src.utils.io_utils import read_pickle, write_pickle, write_json, read_json, read_df
 from src.utils.logger_utils import get_logger
 from src.utils.pandas_utils import iter_tickets_on_field, chunk_dataframe_serial, append_column
 from src.visualization.high_dim_data_projection import run_tsne_projection
@@ -121,7 +121,7 @@ class ClusterModel:
         pass
 
     def load(self):
-        tmp_dict = load_pickle(self.model_file)
+        tmp_dict = read_pickle(self.model_file)
         self.__dict__.update(tmp_dict)
         try:
             LOGGER.info('Length of corpus {}'.format(self.corpus.shape[0]))
@@ -129,7 +129,7 @@ class ClusterModel:
             LOGGER.info('Length of corpus {}'.format(len(self.corpus)))
 
     def save(self):
-        store_pickle(self.__dict__, self.model_file)
+        write_pickle(self.__dict__, self.model_file)
 
     def store_clusters(self, clusters_file, clusters_text_file, cluster_field=None, degree_field=None, workers=2):
         if os.path.isfile(clusters_file) and os.path.isfile(clusters_text_file):
@@ -139,8 +139,8 @@ class ClusterModel:
             self.data_file, self.field, cluster_field, self.cluster_parameters.use_bi_grams, degree_field=degree_field,
             workers=workers, chunksize=1000
         )
-        store_json(cluster_indices, clusters_file)
-        store_json(cluster_texts, clusters_text_file)
+        write_json(cluster_indices, clusters_file)
+        write_json(cluster_texts, clusters_text_file)
         # if cluster_texts_with_degree:
         #     store_json(cluster_texts_with_degree, clusters_text_file.replace('.json', '.withDegree.json'))
         # todo: use cluster_texts_with_degree
@@ -394,7 +394,7 @@ class ClusterModel:
                 cluster_dict[cluster]['count'] = len(values['tickets'])
             else:
                 cluster_dict[cluster]['count'] = 0
-        store_json(cluster_dict, clusters_file)
+        write_json(cluster_dict, clusters_file)
 
     @staticmethod
     def order_by(clusters_file, by='count'):
@@ -405,6 +405,6 @@ class ClusterModel:
         ordered_cluster_dict = OrderedDict()
         for cluster, _ in sorted_clusters_values:
             ordered_cluster_dict[cluster] = cluster_dict[cluster]
-        store_json(ordered_cluster_dict, clusters_file)
+        write_json(ordered_cluster_dict, clusters_file)
 
 # todo: add rest functions..
