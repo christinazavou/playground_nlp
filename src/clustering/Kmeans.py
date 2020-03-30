@@ -92,8 +92,20 @@ class KMeansModel(ClusterModel):
         else:
             self.load()
 
-    def predict(self, docs, **kwargs):
-        pass
+    def predict(self, doc, **kwargs):
+        """
+        :param doc:
+        :param kwargs:
+        :return: label, distribution, probability
+        """
+        if 'idx' in kwargs:
+            idx = kwargs['idx']
+            """soft predict (doc is already in corpus) """
+            return self.model.labels_[idx], None, None
+        else:
+            """strong predict (doc is a vector that is not in the corpus) """
+            assert doc.shape[0] == 1 and len(doc.shape) == 2
+            return self.model.predict(doc)[0], None, None
 
     def get_vocabulary_tokens(self, split=True, stw=None, use_stw=False):
         pass
@@ -103,19 +115,3 @@ class KMeansModel(ClusterModel):
 
     def get_fitted_labels(self, **kwargs):
         pass
-
-
-if __name__ == '__main__':
-    cluster_params = ClusterParameters(num_clusters=50, use_bi_grams=True, max_df=0.5, min_df=5, max_features=1000)
-    kmeans_params = KMeansClusterParameters(vector_size=100, window=5, std_scale=True, svd_n=None, pca_n=None)
-
-    m = KMeansModel(
-        '../.resources/example_preprocessed.csv.gzip',
-        u'textpreprocessed',
-        '../.resources/ALLKMEANS/C1',
-        '../.resources/example_stw_text.p.gzip',
-        'KMeansCluster',
-        cluster_params,
-        kmeans_params)
-
-    # todo: check that log is appended on previous log file

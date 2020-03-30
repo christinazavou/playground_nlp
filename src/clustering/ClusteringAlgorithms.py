@@ -10,6 +10,7 @@ from multiprocessing import Pool, Queue
 from queue import Full
 
 import numpy as np
+from scipy.sparse.csr import csr_matrix
 
 from src.clustering.evaluation import ClusterEvaluator
 from src.preprocessing.StemToWord import StemToWord
@@ -141,7 +142,13 @@ class ClusterModel:
     def load(self):
         tmp_dict = read_pickle(self.model_file)
         self.__dict__.update(tmp_dict)
-        LOGGER.info('Length of corpus {}'.format(len(self.corpus)))
+        LOGGER.info('Length of corpus {}'.format(self.corpus_length()))
+
+    def corpus_length(self):
+        if isinstance(self.corpus, csr_matrix):
+            return self.corpus.shape[0]
+        else:
+            return len(self.corpus)
 
     def save(self):
         """
@@ -203,7 +210,7 @@ class ClusterModel:
     def visualize_t_sne(self, **kwargs):
 
         if not os.path.isfile(self.model_file.replace('.pkl', 't-sne.png')):
-            labels, _, _ = self.labels_exists(**kwargs)
+            labels, _, _ = self.get_labels_as_list(**kwargs)
             if not labels:
                 labels, _, _ = self.fit_labels_parallel()
 
@@ -224,27 +231,33 @@ class ClusterModel:
                                     init=init,
                                     random_state=random_st)
 
-    def labels_exists(self, **kwargs):
-        list_df = list(read_df(self.data_file))
-        if 'cluster{}'.format(self.model_name) not in list_df or (
-                            'show_degree' in kwargs.keys() and kwargs['show_degree'] and 'degree{}'.format(
-                    self.model_name) not in list_df
-        ) or (
-                            'show_distr' in kwargs.keys() and kwargs['show_distr'] and 'distribution{}'.format(
-                    self.model_name) not in list_df
-        ):
-            return None, None, None
-        else:
-            df = read_df(self.data_file)
-            labels, distributions, degrees = [], [], []
-            if 'distribution{}'.format(self.model_name) in list(df):
-                distributions = df['distribution{}'.format(self.model_name)].tolist()
-            if 'degree{}'.format(self.model_name) in list(df):
-                degrees = df['degree{}'.format(self.model_name)].tolist()
-            labels = df['cluster{}'.format(self.model_name)].tolist()
-            return labels, distributions, degrees
+    def get_labels_as_list(self, **kwargs):
+        """
+        :param kwargs:
+        :return: three lists: labels, distributions, degrees
+        """
+        df = read_df(self.data_file)
+        existing_columns = df.columns
 
-    def fit_labels_parallel(self, workers=2, chunksize=10000, **kwargs):
+        labels, distributions, degrees = None, None, None
+
+        cluster_column = 'cluster{}'.format(self.model_name)
+        degree_column = 'degree{}'.format(self.model_name)
+        distribution_column = 'distribution{}'.format(self.model_name)
+
+        to_show_degrees = 'show_degree' in kwargs.keys() and kwargs['show_degree']
+        to_show_distributions = 'show_distribution' in kwargs.keys() and kwargs['show_distribution']
+
+        if cluster_column in existing_columns:
+            labels = df[cluster_column].tolist()
+        if degree_column in existing_columns and to_show_degrees:
+            degrees = df[degree_column].tolist()
+        if distribution_column in existing_columns and to_show_distributions:
+            distributions = df[distribution_column].tolist()
+
+        return labels, distributions, degrees
+
+    def save_fitted_labels_as_list_parallel(self, workers=2, chunksize=10000, **kwargs):
         """
         :param workers:
         :param chunksize:
@@ -253,7 +266,7 @@ class ClusterModel:
         """
         LOGGER.root.level = logging.DEBUG
 
-        labels, distributions, degrees = self.labels_exists(**kwargs)
+        labels, distributions, degrees = self.get_labels_as_list(**kwargs)
         if labels:
             return labels, distributions, degrees
 
@@ -264,38 +277,36 @@ class ClusterModel:
         result_queue = Queue()
 
         pool = Pool(workers, worker_fit_labels, (job_queue, result_queue,))
-        queue_size, real_len = [0], 0  # integer can't be accessed in inner definition so list used
-        labels, distributions, degrees = \
-            np.zeros(len(self.corpus)), np.zeros(len(self.corpus)).astype(object), np.zeros(
-                len(self.corpus)).astype(tuple)
+        queue_size = [0]  # integer can't be accessed in inner definition so list is used instead
+
+        zeros = np.zeros(self.corpus_length())
+        labels, distributions, degrees = zeros, zeros.astype(object), zeros.astype(tuple)
 
         def process_result_queue():
             """Clear the result queue, merging all intermediate results"""
             while not result_queue.empty():
-                lab, distr, degr, ch_f, ch_l = result_queue.get()
-                labels[ch_f:ch_l] = lab
-                distributions[ch_f:ch_l] = distr
-                degrees[ch_f:ch_l] = degr
+                _labels, _distributions, _probabilities, _chunk_first_idx, _chunk_last_idx = result_queue.get()
+                labels[_chunk_first_idx:_chunk_last_idx] = _labels
+                distributions[_chunk_first_idx:_chunk_last_idx] = _distributions
+                degrees[_chunk_first_idx:_chunk_last_idx] = _probabilities
                 queue_size[0] -= 1
 
         chunk_stream = grouper(self.corpus, chunksize)
-        chunk_first, chunk_last = 0, 0
+        chunk_first_idx, chunk_last_idx = 0, 0
         for chunk_no, chunk in enumerate(chunk_stream):
-            chunk_first = chunk_last
-            chunk_last = chunk_first + len(chunk)
-
-            real_len += len(chunk)  # keep track of how many documents we've processed so far
+            chunk_first_idx = chunk_last_idx
+            chunk_last_idx = chunk_first_idx + len(chunk)  # keep track of how many documents we've processed so far
 
             # put the chunk into the workers' input job queue
             chunk_put = False
             while not chunk_put:
                 try:
-                    job_queue.put((chunk_no, chunk, self, chunk_first, chunk_last), block=False)
+                    job_queue.put((chunk_no, chunk, self, chunk_first_idx, chunk_last_idx), block=False)
                     chunk_put = True
                     queue_size[0] += 1
                     logging.info('PROGRESS: dispatched chunk #{} = '
                                  'documents {}-{}, outstanding queue size {}'.format(
-                        chunk_no, chunk_first, chunk_last, queue_size[0]))
+                        chunk_no, chunk_first_idx, chunk_last_idx, queue_size[0]))
                 except Full:
                     # in case the input job queue is full, keep clearing the result queue to make sure we don't deadlock
                     process_result_queue()
@@ -304,23 +315,28 @@ class ClusterModel:
 
         while queue_size[0] > 0:  # wait for all outstanding jobs to finish
             process_result_queue()
-        if real_len != len(self.corpus):
-            raise RuntimeError("input corpus size changed during fit_labels_parallel")
+        if chunk_last_idx != self.corpus_length():
+            raise RuntimeError("Input corpus size changed during fit_labels_parallel")
 
         pool.terminate()
-        logging.info('finding fitted labels finished after {} mins'.format((time.time() - s_time) // 60))
+        logging.info('Finding fitted labels finished after {} minutes'.format((time.time() - s_time) // 60))
 
-        list_df = list(read_df(self.data_file))
-        if 'show_distr' in kwargs.keys() and kwargs['show_distr'] and 'distribution{}'.format(
-                self.model_name) not in list_df:
-            append_column(self.data_file, 'distribution{}'.format(self.model_name), distributions)
-        if 'show_degree' in kwargs.keys() and kwargs['show_degree'] and 'degree{}'.format(
-                self.model_name) not in list_df:
-            append_column(self.data_file, 'degree{}'.format(self.model_name), degrees)
-        if 'cluster{}'.format(self.model_name) not in list_df:
-            append_column(self.data_file, 'cluster{}'.format(self.model_name), labels)
-        logging.info('assigning fitted labels finished after {} mins'.format((time.time() - s_time) // 60))
+        self.save_labels(labels, distributions, degrees, **kwargs)
+        logging.info(
+            'Parallel assigning of fitted labels finished after {} minutes'.format((time.time() - s_time) // 60))
         return labels, distributions, degrees
+
+    def save_labels(self, labels, distributions, degrees, **kwargs):
+        df = read_df(self.data_file)
+        existing_columns = df.columns
+        to_show_distributions = 'show_distribution' in kwargs.keys() and kwargs['show_distribution']
+        if to_show_distributions and 'distribution{}'.format(self.model_name) not in existing_columns:
+            append_column(self.data_file, 'distribution{}'.format(self.model_name), distributions)
+        to_show_degrees = 'show_degree' in kwargs.keys() and kwargs['show_degree']
+        if to_show_degrees and 'degree{}'.format(self.model_name) not in existing_columns:
+            append_column(self.data_file, 'degree{}'.format(self.model_name), degrees)
+        if 'cluster{}'.format(self.model_name) not in existing_columns:
+            append_column(self.data_file, 'cluster{}'.format(self.model_name), labels)
 
     @staticmethod
     def create_clusters_parallel(input_file, text_field, cluster_field, use_bi_grams, degree_field=None,
